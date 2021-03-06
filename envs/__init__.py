@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from envs._cartpole import CartPole
+from envs._cartpole_rbdl import Cartpole_rbdl
 from envs._rocket import Rocket
 
 

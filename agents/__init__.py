@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from agents._deep_cartpole import Deep_Cartpole
+from agents._deep_cartpole_rbdl import Deep_Cartpole_rbdl
 from agents._deep_rocket import Deep_Rocket
 
 
