@@ -19,9 +19,9 @@ import jax.numpy as jnp
 import numpy as np
 import functools
 
-from deluca.agents.core import Agent
-from deluca.envs.core import Env
-from deluca.utils import Random
+from agents.core import Agent
+from envs.core import Env
+from utils import Random
 import numpy.random as npr
 
 # generic deep controller for 1-dimensional discrete non-negative action space

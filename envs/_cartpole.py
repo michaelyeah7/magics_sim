@@ -18,8 +18,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 
-from deluca.envs.core import Env
-from deluca.utils import Random
+from envs.core import Env
+from utils import Random
 
 
 class CartPole(Env):

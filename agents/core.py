@@ -14,7 +14,7 @@
 import inspect
 import logging
 
-from deluca.core import JaxObject
+from core import JaxObject
 
 AgentRegistry = {}
 

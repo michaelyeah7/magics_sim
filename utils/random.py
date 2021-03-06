@@ -14,7 +14,7 @@
 import jax
 import jax.numpy as jnp
 
-from deluca.core import JaxObject
+from core import JaxObject
 
 
 class Random(JaxObject):
