@@ -31,7 +31,6 @@ ipython-genutils==0.2.0
 ipywidgets==7.6.3
 jax==0.2.9
 jaxlib==0.1.61
-jaxRBDL==0.0.1
 jedi==0.18.0
 Jinja2==2.11.3
 jsonschema==3.2.0
@@ -83,7 +82,6 @@ pyparsing==2.4.7
 pyrsistent==0.17.3
 pyspellchecker==0.5.6
 python-dateutil==2.8.1
-pytinydiffsim==0.0.4
 PyYAML==5.4.1
 pyzmq==22.0.3
 qtconsole==5.0.2
@@ -101,7 +99,6 @@ traitlets==5.0.5
 trimesh==3.9.8
 typing-extensions==3.7.4.3
 u-msgpack-python==2.7.1
-urdfdom-py==0.4.5
 wcwidth==0.2.5
 webencodings==0.5.1
 widgetsnbextension==3.5.1

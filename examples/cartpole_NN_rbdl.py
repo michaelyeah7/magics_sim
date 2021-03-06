@@ -23,8 +23,8 @@ f_grad = jax.jit(jax.jacfwd(forward,argnums=1))
 def loop(context, x):
     env, agent = context
     if(render==True):
-        # env.render()
-        env.py_bullet_render()
+        env.render()
+        # env.py_bullet_render()
     control = agent(env.state, agent.params)
     prev_state = copy.deepcopy(env.state)
     # print("control",control)
@@ -62,8 +62,8 @@ agent.params = loaded_params
  # for loop version
 # xs = jnp.array(jnp.arange(T))
 print(env.reset())
-update_params = False
-render = True
+update_params = True
+render = False
 reward = 0
 loss = 0
 episode_loss = []
@@ -86,11 +86,14 @@ for j in range(episodes_num):
         # reward += r
     episode_loss.append(loss)
     print("loss is %f and lasts for %d steps" % (loss,i))
+    if (j%20==0 and j!=0):
+        with open("cartpole_rbdl_params"+ "episode_%d" % j + strftime("%Y-%m-%d %H:%M:%S", gmtime()) +".txt", "wb") as fp:   #Pickling
+            pickle.dump(agent.params, fp)
 # reward_forloop = reward
 # print('reward_forloop = ' + str(reward_forloop))
 plt.plot(episode_loss[1:])
 
 #save plot and params
 plt.savefig('cartpole_rbdl_loss'+ strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '.png')
-with open("params"+ strftime("%Y-%m-%d %H:%M:%S", gmtime()) +".txt", "wb") as fp:   #Pickling
-    pickle.dump(agent.params, fp)
+
+# fp.close()
