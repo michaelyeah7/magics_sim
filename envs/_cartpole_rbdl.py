@@ -128,14 +128,14 @@ class Cartpole_rbdl(Env):
 
 
         #simulator
-        CURRENT_PATH = os.path.dirname(os.path.realpath(__file__))
-        p.connect(p.GUI)
-        p.setAdditionalSearchPath(CURRENT_PATH) 
-        self.test_robot = p.loadURDF("urdf/cartpole.urdf",[0,0,1])
+        # CURRENT_PATH = os.path.dirname(os.path.realpath(__file__))
+        # p.connect(p.GUI)
+        # p.setAdditionalSearchPath(CURRENT_PATH) 
+        # self.test_robot = p.loadURDF("urdf/cartpole.urdf",[0,0,1])
 
-        for j in range (p.getNumJoints(self.test_robot)):
-            info = p.getJointInfo(self.test_robot,j)
-            print("joint info", info)
+        # for j in range (p.getNumJoints(self.test_robot)):
+        #     info = p.getJointInfo(self.test_robot,j)
+        #     print("joint info", info)
 
         # @jax.jit
         def _dynamics(state, action):
@@ -280,8 +280,8 @@ class Cartpole_rbdl(Env):
 
         return self.viewer.render(return_rgb_array=mode == "rgb_array")
 
-    def py_bullet_render(self):
-        # q=[0,self.state[0],self.state[1]]
-        for j in range(2):
-            p.setJointMotorControl2(self.test_robot,j,p.POSITION_CONTROL,self.state[j],force = 1)
-        p.stepSimulation()
+    # def py_bullet_render(self):
+    #     # q=[0,self.state[0],self.state[1]]
+    #     for j in range(2):
+    #         p.setJointMotorControl2(self.test_robot,j,p.POSITION_CONTROL,self.state[j],force = 1)
+    #     p.stepSimulation()

@@ -16,8 +16,8 @@ def forward(state, w, env, agent):
     reward = env.reward_func(next_state)
     return reward
 
-# f_grad = jax.grad(forward,argnums=1)
-f_grad = jax.jit(jax.jacfwd(forward,argnums=1))
+f_grad = jax.grad(forward,argnums=1)
+# f_grad = jax.jit(jax.jacfwd(forward,argnums=1))
 
 
 def loop(context, x):
