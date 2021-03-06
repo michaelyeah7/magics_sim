@@ -55,7 +55,7 @@ agent = Deep_Cartpole_rbdl(
              max_episode_length = 500,
              seed = 0
             )
-loaded_params = pickle.load( open( "examples/cartpole_rbdl_params2021-03-06 06:23:39.txt", "rb" ) )
+loaded_params = pickle.load( open( "examples/cartpole_rbdl_params_episode_5_2021-03-06 22:36:01.txt", "rb" ) )
 
 agent.params = loaded_params
 
@@ -63,12 +63,12 @@ agent.params = loaded_params
 # xs = jnp.array(jnp.arange(T))
 print(env.reset())
 update_params = True
-render = False
+render = True
 reward = 0
 loss = 0
 episode_loss = []
-episodes_num = 100
-T = 200
+episodes_num = 1000
+T = 400
 for j in range(episodes_num):
 
     loss = 0
@@ -86,8 +86,8 @@ for j in range(episodes_num):
         # reward += r
     episode_loss.append(loss)
     print("loss is %f and lasts for %d steps" % (loss,i))
-    if (j%20==0 and j!=0):
-        with open("cartpole_rbdl_params"+ "episode_%d" % j + strftime("%Y-%m-%d %H:%M:%S", gmtime()) +".txt", "wb") as fp:   #Pickling
+    if (j%5==0 and j!=0):
+        with open("examples/cartpole_rbdl_params"+ "_episode_%d_" % j + strftime("%Y-%m-%d %H:%M:%S", gmtime()) +".txt", "wb") as fp:   #Pickling
             pickle.dump(agent.params, fp)
 # reward_forloop = reward
 # print('reward_forloop = ' + str(reward_forloop))

@@ -156,8 +156,9 @@ class Cartpole_rbdl(Env):
                 self.length * (4.0 / 3.0 - self.masspole * costheta ** 2 / self.total_mass)
             )
             xacc_manually = temp - self.polemass_length * thetaacc_manually * costheta / self.total_mass
+            # print("xacc_manually",xacc_manually)            
             # print("thetaacc_manually",thetaacc_manually)
-            # print("xacc_manually",xacc_manually)
+
 
             
             #calculate xacc & thetaacc using jaxRBDL
@@ -172,8 +173,9 @@ class Cartpole_rbdl(Env):
             # print("accelerations",accelerations)
             xacc = accelerations[1][0]
             thetaacc = accelerations[2][0]
-            # print("thetaacc",thetaacc)
             # print("xacc",xacc)
+            # print("thetaacc",thetaacc)
+
 
 
             if self.kinematics_integrator == "euler":
