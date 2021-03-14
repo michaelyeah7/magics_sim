@@ -122,6 +122,7 @@ class CartPole(Env):
             # force = jax.lax.cond(action == 1, lambda x: x, lambda x: -x, self.force_mag)
             # force = (action - 0.5) * 2 * 10
             force = np.clip(action * 100,-10,10)
+            # force = action * 200
             # print("force",force)
 
             costheta = jnp.cos(theta)

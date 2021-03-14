@@ -22,13 +22,15 @@ import numpy as np
 # from deluca.utils import Random
 from envs.core import Env
 from utils import Random
-
 from jaxRBDL.Dynamics.ForwardDynamics import ForwardDynamics, ForwardDynamicsCore
 # from pyRBDL.Dynamics.ForwardDynamics import ForwardDynamics
-# from jaxRBDL.Utils.UrdfWrapper import UrdfWrapper
-from jaxRBDL.Utils.UrdfWrapper_guo import UrdfWrapper
+from jaxRBDL.Utils.UrdfWrapper import UrdfWrapper
+# from jaxRBDL.Utils.UrdfWrapper_guo import UrdfWrapper
+from jaxRBDL.Simulator.ObdlRender import ObdlRender
+from jaxRBDL.Simulator.ObdlSim import ObdlSim
 import os
 import pybullet as p
+from numpy import sin, cos
 
 class Cartpole_rbdl(Env):
     """
@@ -98,7 +100,11 @@ class Cartpole_rbdl(Env):
 
         self.random = Random(seed)
 
-        self.model = UrdfWrapper("urdf/cartpole.urdf").model
+        self.model = UrdfWrapper("urdf/cartpole_add_base.urdf").model
+        self.osim = ObdlSim(self.model,dt=self.tau,vis=True)
+        
+        #three dynamic options "RBDL" "Original" "PDP"
+        self.dynamics_option = "RBDL"
         # self.model["NB"] = self.model["NB"] + 1 
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation
@@ -143,38 +149,71 @@ class Cartpole_rbdl(Env):
 
             # force = jax.lax.cond(action == 1, lambda x: x, lambda x: -x, self.force_mag)
             # force = (action - 0.5) * 2 * 10
-            # force = np.clip(action * 100,-10,10)
-            force = action[0]
+            # force = np.clip(action[1] * 100,-10,10)
+            # print("action",action)
+
+            #works for original
+            # force = np.clip(action[0] * 100,-10,10)
+            #works for PDP and Original
+            force = action[0] * 10
+            #works for RBDL
+            force = action[0] * 100
             # print("fr",action)
             # print("force",force)
+            if (self.dynamics_option == "Original"):
+                costheta = jnp.cos(theta)
+                sintheta = jnp.sin(theta)
 
-            costheta = jnp.cos(theta)
-            sintheta = jnp.sin(theta)
+                # cartpole dynamics
+                temp = (force + self.polemass_length * theta_dot ** 2 * sintheta) / self.total_mass
+                thetaacc_manually = (self.gravity * sintheta - costheta * temp) / (
+                    self.length * (4.0 / 3.0 - self.masspole * costheta ** 2 / self.total_mass)
+                )
+                xacc_manually = temp - self.polemass_length * thetaacc_manually * costheta / self.total_mass
+                # print("xacc_manually",xacc_manually)            
+                # print("thetaacc_manually",thetaacc_manually)
+                xacc = xacc_manually
+                thetaacc = thetaacc_manually
 
-            temp = (force + self.polemass_length * theta_dot ** 2 * sintheta) / self.total_mass
-            thetaacc_manually = (self.gravity * sintheta - costheta * temp) / (
-                self.length * (4.0 / 3.0 - self.masspole * costheta ** 2 / self.total_mass)
-            )
-            xacc_manually = temp - self.polemass_length * thetaacc_manually * costheta / self.total_mass
-            # print("xacc_manually",xacc_manually)            
-            # print("thetaacc_manually",thetaacc_manually)
+            if (self.dynamics_option == "PDP"):
+                #calculate xacc & thetaacc using PDP
+                # x = 0.04653214
+                dx = x_dot
+                q = theta
+                dq = theta_dot
+                U = force
 
+                #mass of cart and pole
+                mp = 0.1
+                mc = 1.0
+                l = 0.5
 
-            
-            #calculate xacc & thetaacc using jaxRBDL
-            q = jnp.array([0,x,theta])
-            qdot = jnp.array([0,x_dot,theta_dot])
-            torque = jnp.array([0,force,0.0])
-            # print("q",q)
-            # print("qdot",qdot)
-            # print("force",force)
-            input = (self.model, q, qdot, torque)
-            accelerations = ForwardDynamics(*input)
-            # print("accelerations",accelerations)
-            xacc = accelerations[1][0]
-            thetaacc = accelerations[2][0]
-            # print("xacc",xacc)
-            # print("thetaacc",thetaacc)
+                g=9.81
+
+                ddx = (U + mp * sin(q) * (l * dq * dq + g * cos(q))) / (
+                        mc + mp * sin(q) * sin(q))  # acceleration of x
+                ddq = (-U * cos(q) - mp * l * dq * dq * sin(q) * cos(q) - (
+                        mc + mp) * g * sin(
+                    q)) / (
+                                l * mc + l * mp * sin(q) * sin(q))  # acceleration of theta
+                xacc = ddx
+                thetaacc = ddq
+
+            if (self.dynamics_option == "RBDL"):
+                #calculate xacc & thetaacc using jaxRBDL
+                q = jnp.array([0,0,x,theta])
+                qdot = jnp.array([0,0,x_dot,theta_dot])
+                torque = jnp.array([0,0,force,0.])
+                # print("q",q)
+                # print("qdot",qdot)
+                # print("force",force)
+                input = (self.model, q, qdot, torque)
+                accelerations = ForwardDynamics(*input)
+                # print("accelerations",accelerations)
+                xacc = accelerations[2][0]
+                thetaacc = accelerations[3][0]
+                # print("xacc",xacc)
+                # print("thetaacc",thetaacc)
 
 
 
@@ -222,8 +261,10 @@ class Cartpole_rbdl(Env):
 
 
     def reward_func(self,state):
-        reward = state[0]**2 + (state[1])**2 + 10*state[2]**2 + state[3]**2 
+        # x, x_dot, theta, theta_dot = state
+        # reward = state[0]**2 + (state[1])**2 + 100*state[2]**2 + state[3]**2 
         # reward = jnp.exp(state[0])-1 + state[2]**2 + state[3]**2 
+        reward = jnp.exp(state[0]**2) + (100*state[2])**2 + state[3]**2 
         return reward
 
 
@@ -282,8 +323,12 @@ class Cartpole_rbdl(Env):
 
         return self.viewer.render(return_rgb_array=mode == "rgb_array")
 
-    # def py_bullet_render(self):
-    #     # q=[0,self.state[0],self.state[1]]
-    #     for j in range(2):
-    #         p.setJointMotorControl2(self.test_robot,j,p.POSITION_CONTROL,self.state[j],force = 1)
-    #     p.stepSimulation()
+    def osim_render(self):
+        # # q=[0,self.state[0],self.state[1]]
+        # for j in range(2):
+        #     p.setJointMotorControl2(self.test_robot,j,p.POSITION_CONTROL,self.state[j],force = 1)
+        # p.stepSimulation()
+
+        # x, x_dot, theta, theta_dot = state
+        q = [0,0,self.state[0],self.state[2]]
+        self.osim.step_theta(q)

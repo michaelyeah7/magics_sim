@@ -25,7 +25,7 @@ from utils import Random
 import numpy.random as npr
 
 # generic deep controller for 1-dimensional discrete non-negative action space
-class Deep_Cartpole(Agent):
+class Deep_Arm_rbdl(Agent):
     """
     Generic deep controller that uses zero-order methods to train on an
     environment.
@@ -80,7 +80,7 @@ class Deep_Cartpole(Agent):
             return [(scale * rng.randn(m, n), scale * rng.randn(n))
                 for m, n, in zip(layer_sizes[:-1], layer_sizes[1:])]
 
-        layer_sizes = [4, 32, 32, len(self.action_space)]
+        layer_sizes = [self.env_state_size, 32, 32, len(self.action_space)]
         param_scale = 0.1
         self.params = init_random_params(param_scale, layer_sizes)
 
@@ -125,8 +125,9 @@ class Deep_Cartpole(Agent):
 
         # z = jnp.dot(state, w)
         # exp = jnp.exp(z)
-        exp = jnp.exp(logits)
-        return exp / jnp.sum(exp)
+        # exp = jnp.exp(logits)
+        # return exp / jnp.sum(exp)
+        return logits
 
     def softmax_grad(self, softmax: jnp.ndarray) -> jnp.ndarray:
         """
@@ -151,14 +152,15 @@ class Deep_Cartpole(Agent):
         # print("state",state)
         # print("W",self.W)
         self.state = state
-        self.probs = self.policy(state, params)   
-        # print("self.probs",self.probs)     
+        # self.probs = self.policy(state, params)
+        state = state.flatten() 
+        self.action = self.policy(state, params)         
         # self.action = jax.random.choice(
         #     self.random.generate_key(), 
         #     a=self.action_space, 
         #     p=self.probs
         # )
-        self.action = (self.probs[1]-0.5)
+        # self.action = (self.probs[1]-0.5)
         # self.action = jnp.clip((self.probs[1]-0.5)*10, 0, 1)
         return self.action
 
