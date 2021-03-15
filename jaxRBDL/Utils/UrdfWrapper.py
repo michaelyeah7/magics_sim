@@ -119,12 +119,13 @@ def load_urdf(file_path):
     model  = dict()
 
     #NB
-    NB = len(robot.joints)
+    NB = len(robot.links)
     model["NB"] = NB
 
     #joint_name
     joint_name = []
-    for i in range(NB):
+    joint_name.append("") #the first joint does't not exist
+    for i in range(NB-1):
         name = robot.joints[i].name
         joint_name.append(name)
     model['jname'] = joint_name
@@ -139,19 +140,21 @@ def load_urdf(file_path):
 
     #jtype
     joint_type = [0] * NB
-    for i in range(NB):
+    joint_type[0] = 0 # TODO: need discuss
+    for i in range(NB-1):
         if(robot.joints[i].joint_type =="revolute"):
-            joint_type[i] = 0
+            joint_type[i+1] = 0
         elif(robot.joints[i].joint_type =="prismatic"):
-            joint_type[i] = 1
+            joint_type[i+1] = 1
         else:
-            joint_type[i] = 1 #TODO need discuss
+            joint_type[i+1] = 1 #TODO need discuss
             # print("not known joint type",i)
     model['jtype'] = joint_type
 
     #joint_axis 
     joint_axis = ""
-    for i in range(NB):
+    joint_axis += 'x' #TODO:need discuss
+    for i in range(NB-1):
         axis_type = robot.joints[i].axis
         if(axis_type[0] == 1):
             joint_axis += 'x'
@@ -166,28 +169,31 @@ def load_urdf(file_path):
 
     #parents
     parents = [0]*NB
+    parents[0] = 0 #base link
     name_dict = {}
-    for i in range(NB+1):
+    for i in range(NB):
         _n = robot.links[i].name
         name_dict[_n] = i
-    for i in range(NB):
+    for i in range(NB-1):
         _p, _c = robot.joints[i].parent,robot.joints[i].child
         _pi, _ci = name_dict[_p],name_dict[_c]
-        parents[_ci-1] = _pi  #TODO this is not suggested, but to sync with pyRBDL
+        parents[_ci] = _pi + 1 #TODO this is not suggested, but to sync with pyRBDL
     model['parent'] = parents
 
     #xtree and I
     X_tree, I = [],[]
-    for i in range(NB):
-        #joint info    
-        xyz,rpy = transform_origin(robot.joints[i-1].origin)
-        origin_matrix  = robot.joints[i-1].origin
-        trans_matrix = origin_matrix[:3,3]#xyz
-        rot_matrix = origin_matrix[:3,:3]#rpy_to_matrix(rpy)
-        #link info
-        link_mass = robot.links[i+1].inertial.mass
-        link_intertia =  robot.links[i+1].inertial.inertia
-        link_com = transform_origin(robot.links[i+1].inertial.origin)[0] # defaul rpy in link is equal to 0,0,0
+    for i in range(len(robot.links)):
+        if(i== 0 ):
+            trans_matrix =  np.zeros((3,))       
+            rot_matrix =  np.eye(3)       
+        else:
+            xyz,rpy = transform_origin(robot.joints[i-1].origin)
+            origin_matrix  = robot.joints[i-1].origin
+            trans_matrix = origin_matrix[:3,3]#xyz
+            rot_matrix = origin_matrix[:3,:3]#rpy_to_matrix(rpy)
+        link_mass = robot.links[i].inertial.mass
+        link_intertia =  robot.links[i].inertial.inertia
+        link_com = transform_origin(robot.links[i].inertial.origin)[0] # defaul rpy in link is equal to 0,0,0
         #tranform
         tree_element = SpatialTransform(jnp.asarray(rot_matrix),jnp.asarray(trans_matrix))
         I_element = RigidBodyInertia(link_mass,jnp.asarray(link_com),jnp.asarray(link_intertia))

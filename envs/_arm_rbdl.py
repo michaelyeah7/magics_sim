@@ -71,6 +71,7 @@ class Arm_rbdl(Env):
         self.random = Random(seed)
 
         self.model = UrdfWrapper("urdf/arm.urdf").model
+        # self.model = UrdfWrapper("urdf/two_link_arm.urdf").model
         self.osim = ObdlSim(self.model,dt=self.tau,vis=True)
         
         self.reset()
@@ -102,7 +103,7 @@ class Arm_rbdl(Env):
 
             # _q = jnp.zeros((7,))
             # _qdot = jnp.zeros((7,))
-            for i in range(1,len(q)):
+            for i in range(2,len(q)):
                 q = jax.ops.index_add(q, i, self.tau * qdot[i]) 
                 qdot = jax.ops.index_add(qdot, i, self.tau * qddot[i][0])
             # q[0] = 0
