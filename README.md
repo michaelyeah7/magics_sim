@@ -45,6 +45,10 @@ python examples/arm_NN_rbdl.py
 ```
 Issue: RBDL returns a very large acceleration given a small force and immediately reaches the threshold, so the episode ends at the first step.
 
+### Quadropedal Robot
+This is a quadrupedal robot(UNITREE) rendered using a pre-generated trajectory.
+![](assets/quadropedal.gif)
+
 
 <!-- ### Rocket Landing
 ![](assets/rocket_landing.gif)
