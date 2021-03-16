@@ -73,7 +73,7 @@
     </link>
 
     <joint name="FR_hip_motor_2_chassis_joint" type="continuous">
-        <axis xyz="0 0 -1"/>
+        <axis xyz="0 0 1"/>
         <parent link="chassis"/>
         <child link="FR_hip_motor"/>
         <origin rpy="0 0 0" xyz="-0.0817145 0 0.242889"/>
@@ -297,7 +297,7 @@
     </link>
 
     <joint name="RR_hip_motor_2_chassis_joint" type="continuous">
-        <axis xyz="0 0 -1"/>
+        <axis xyz="0 0 1"/>
         <parent link="chassis"/>
         <child link="RR_hip_motor"/>
         <origin rpy="0 0 0" xyz="-0.0817145 0 -0.194401"/>

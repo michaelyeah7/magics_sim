@@ -24,6 +24,7 @@ class RenderObject():
         self.position = [0.0,0.0,0.0]
         self.quat = [0,0,0,1]
         self.link_name = ""
+        self.init_rpy = [0.0,0.0,0.0]
         return
 
     def assign_prop(self,shape_type,origin,size,parent_joint,link_id,rgba,scale=[1,1,1]):
@@ -48,6 +49,10 @@ class RenderObject():
     
     def assign_name(self,name):
         self.link_name = name
+    
+    def assign_initQua(self,qua,rpy):
+        self.init_qua = qua
+        self.init_rpy = rpy
 
 class ObdlRender():
     def __init__(self,model):
@@ -101,8 +106,10 @@ class ObdlRender():
         #get shape and local position
         _lid = 0
         current_q = [0.0]*self.model["NB"]
-        self.rpy = np.zeros((3,))
+        # self.rpy = np.zeros((3,))
         self.rpys = np.zeros((NL,3))
+        self.quas = np.zeros((NL,4))
+        self.quas[:,-1] = 1.0
         for l in robot.links:
             visuals = l.visuals
             for v in visuals:
@@ -137,6 +144,9 @@ class ObdlRender():
                     _obj.assign_prop("mesh",mesh_origin,[mesh_name],_pid,_lid,mesh_color,mesh_scale)
                 _p,_q = self.transform_pos(self.model,_obj,q=current_q)
                 _obj.assign_pose(_p,_q)
+                init_rpy = matrix_to_rpy(v.origin[:3,:3])
+                init_qua = self.p.getQuaternionFromEuler(init_rpy)
+                _obj.assign_initQua(init_qua,init_rpy)
                 bId = self.create_visualshape(target_obj=_obj)
                 _obj.assign_id(bId)
                 _obj.assign_name(l.name)
@@ -148,26 +158,29 @@ class ObdlRender():
         body_id = -1
         vis_id = -1
         if(target_obj.type == "box"):
-            vis_id = p.createVisualShape(p.GEOM_BOX, halfExtents=target_obj.shape,rgbaColor=target_obj.rgba)
+            vis_id = p.createVisualShape(p.GEOM_BOX, halfExtents=target_obj.shape,rgbaColor=target_obj.rgba,visualFrameOrientation=target_obj.init_qua)
             col_id = p.createCollisionShape(p.GEOM_BOX, halfExtents=target_obj.shape)
         elif(target_obj.type == "cylinder"):
-            vis_id = p.createVisualShape(p.GEOM_CYLINDER, radius=target_obj.shape[0],length=target_obj.shape[1], rgbaColor=target_obj.rgba)
+            vis_id = p.createVisualShape(p.GEOM_CYLINDER, radius=target_obj.shape[0],length=target_obj.shape[1], rgbaColor=target_obj.rgba,visualFrameOrientation=target_obj.init_qua)
             col_id = p.createCollisionShape(p.GEOM_CYLINDER, radius=target_obj.shape[0],length=target_obj.shape[1])
         elif(target_obj.type == "sphere"):
-            vis_id = p.createVisualShape(p.GEOM_SPHERE, radius=target_obj.shape[0],rgbaColor=target_obj.rgba)
+            vis_id = p.createVisualShape(p.GEOM_SPHERE, radius=target_obj.shape[0],rgbaColor=target_obj.rgba,visualFrameOrientation=target_obj.init_qua)
             col_id = p.createCollisionShape(p.GEOM_SPHERE, radius=target_obj.shape[0])
         elif(target_obj.type == "mesh"):
-            vis_id = p.createVisualShape(p.GEOM_MESH, fileName=target_obj.shape[0],meshScale=target_obj.scale)
+            vis_id = p.createVisualShape(p.GEOM_MESH, fileName=target_obj.shape[0],meshScale=target_obj.scale,visualFrameOrientation=target_obj.init_qua)
             col_id = p.createCollisionShape(p.GEOM_MESH, fileName=target_obj.shape[0],meshScale=target_obj.scale)
-        body_id = p.createMultiBody(baseMass=0,  baseCollisionShapeIndex = col_id, baseVisualShapeIndex=vis_id, basePosition =target_obj.position,baseOrientation = target_obj.quat)
+        body_id = p.createMultiBody(baseMass=0.01,  baseCollisionShapeIndex = col_id, baseVisualShapeIndex=vis_id, basePosition =target_obj.position,\
+                                    baseOrientation = target_obj.quat)
+        # body_id = p.createMultiBody(baseMass=0.01,  baseVisualShapeIndex=vis_id, basePosition =target_obj.position,baseOrientation = target_obj.quat)
         return body_id
     
     def step_render(self,targetQ):
         """
         render robot to the target joint angle
         """
-        self.rpy = np.zeros((3,))
+        self.rpys = np.zeros((3,))
         self.transform_rpy(self.model,targetQ)
+        self.transform_qua(self.model,targetQ)
         n_obj = len(self.render_objects)
         for i in range(n_obj):
             if(self.render_objects[i].parent_joint == 0):
@@ -223,8 +236,60 @@ class ObdlRender():
         # print("type",model['jtype'],"current_q",q,"rpys",self.rpys)
         return
 
+    def transform_qua(self,model,q):
+        """
+        transform the q to all rpy
+        """
+        zeros_pos = np.zeros((3,))
+        self.quas = np.zeros((self.NL,4))
+        self.quas[:,-1] = 1.0
+        self.j_qua = np.zeros((self.NL,4))
+        self.j_qua[:,-1] = 1.0
+        parent = np.array(self.model['parent'])
+        # print(parent)
+        #calc joint rpy
+        for i in range(self.NL):
+            _pid = parent[i] -1 
+            _qua = np.array([0.0,0.0,0.0,1.0])
+            _rpy = np.array([0.0,0.0,0.0])
+            if(i == 0):
+                if(model['jtype'][0] == 0):
+                    if(model['jaxis'][0]=='x'):
+                        _rpy = [q[0],0.0,0.0]
+                        _qua = self.p.getQuaternionFromEuler (_rpy)
+                    elif(model['jaxis'][0]=='y'):
+                        _rpy = [0.0,q[0],0.0]
+                        _qua = self.p.getQuaternionFromEuler (_rpy)
+                    elif(model['jaxis'][0]=='z'):
+                        _rpy = [0.0,0.0,q[0]]
+                        _qua = self.p.getQuaternionFromEuler (_rpy)
+            else:
+                if(model['jtype'][i] == 0):
+                    if(model['jaxis'][i]=='x'):
+                        _rpy = [q[i],0.0,0.0]
+                    elif(model['jaxis'][i]=='y'):
+                        _rpy = [0.0,q[i],0.0]
+                    elif(model['jaxis'][i]=='z'):
+                        _rpy = [0.0,0.0,q[i]]
+                    elif(model['jaxis'][i]=='a'):
+                        _rpy = [-q[i],0.0,0.0]
+                    elif(model['jaxis'][i]=='b'):
+                        _rpy = [0.0,-q[i],0.0]
+                    elif(model['jaxis'][i]=='c'):
+                        _rpy = [0.0,0.0,-q[i]]
+                _qua = self.p.getQuaternionFromEuler (_rpy)
+                _pQua = np.array(self.j_qua[_pid])
+                _qua = self.p.multiplyTransforms(zeros_pos,_pQua,zeros_pos,_qua)[1]
+            # print("link",i,"parent",_pid,"qua:",_qua)
+            self.j_qua[i] = _qua
+        #calc link's rpy, which is qeqaul to parent joint rpy
+        # print(self.j_qua) 
+        self.quas = self.j_qua
+        return
+
 
     def move_obj(self,_obj):
+        # p.resetBasePositionAndOrientation(_obj.body_id,_obj.position,(0.0,0.0,0.0,1.0))
         p.resetBasePositionAndOrientation(_obj.body_id,_obj.position,_obj.quat)
         return
 
@@ -253,8 +318,9 @@ class ObdlRender():
         # qua = p.getQuaternionFromEuler(rpy)
 
         _rid = obj.parent_joint
-        rpy = np.array(self.rpys[_rid])
+        rpy = np.array(self.rpys[_rid]) #+ np.array(obj.init_rpy)
         qua = p.getQuaternionFromEuler(rpy)
+        qua = self.quas[_rid]
 
         pos = np.asarray(pos).flatten() 
         qua = np.asarray(qua).flatten()
@@ -265,6 +331,7 @@ class ObdlRender():
         """
         obj: render object, calc rpy from rotation matrx
         q: current angle of all joints
+        problem: matrix_to_rpy has several return 
         """
         pos,qua = None,None
         q = np.asarray(q)
