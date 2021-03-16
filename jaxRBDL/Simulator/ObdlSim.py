@@ -35,8 +35,12 @@ class ObdlSim():
 
         input = (self.model, q, qdot, tau)
         qddot_hat = ForwardDynamics(*input).flatten() 
-        print("applied torque",tau,"qddot_hat",qddot_hat)
+        # print("applied torque",tau,"qddot_hat",qddot_hat)
         q_hat,qdot_hat = self.calculate_q(dt=self.dt,q=q,qdot=qdot,qddot=qddot_hat)
+
+        #calac contact here to get JDotDot
+        # CalcContactJdotQdot
+        
         if(self.visual):
             self.render.step_render(q_hat)
 

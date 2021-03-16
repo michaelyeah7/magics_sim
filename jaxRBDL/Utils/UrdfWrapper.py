@@ -140,9 +140,11 @@ def load_urdf(file_path):
 
     #jtype
     joint_type = [0] * NB
-    joint_type[0] = 0 # TODO: need discuss
+    joint_type[0] = 1 # TODO: need discuss
     for i in range(NB-1):
         if(robot.joints[i].joint_type =="revolute"):
+            joint_type[i+1] = 0
+        elif(robot.joints[i].joint_type =="continuous"):
             joint_type[i+1] = 0
         elif(robot.joints[i].joint_type =="prismatic"):
             joint_type[i+1] = 1
@@ -162,6 +164,12 @@ def load_urdf(file_path):
             joint_axis += 'y'
         elif(axis_type[2] == 1):
             joint_axis += 'z'
+        elif(axis_type[0] == -1):
+            joint_axis += 'a'
+        elif(axis_type[1] == -1):
+            joint_axis += 'b'
+        elif(axis_type[2] == -1):
+            joint_axis += 'c'
         else:
             joint_axis += 'x'
             # print("no known joint axis",i)
