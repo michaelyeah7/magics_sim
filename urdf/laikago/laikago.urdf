@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <robot name="plane">
 <!-- Base -->
-  <!-- <link name="base_link">
+  <link name="base_link">
     <inertial>
       <origin rpy="0 0 0" xyz="0 0 0"/>
       <mass value="0.1"/>
@@ -9,11 +9,12 @@
     </inertial>
   </link>
   <joint name="add_height_joint" type="revolute">
+    <axis xyz="1 0 0"/>
     <parent link="base_link"/>
     <child link="chassis"/>
-    <origin rpy="0 0 0" xyz="0 0 0.8"/>
+    <origin rpy="0 0 0" xyz="0 0 0.5"/>
     <limit effort="30.0" lower="-3.1415926535" upper="3.1415926535" velocity="5.0"/>
-  </joint> -->
+  </joint>
 
   <link name="chassis">
   <contact>

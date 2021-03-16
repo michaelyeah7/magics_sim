@@ -13,17 +13,14 @@ model = UrdfWrapper("urdf/laikago/laikago.urdf").model
 # print("model",model)
 
 # osim = ObdlSim(model,dt=tau,vis=True)
-# q = np.array([0,0,0])
-
 # while True:
-#     # osim.step_theta(q)
 #     time.sleep(100)
 
-p.connect(p.GUI)
+# p.connect(p.GUI)
 # test_robot = p.loadURDF("urdf/quadrupedal.urdf",[0,0,0])
-test_robot = p.loadURDF("urdf/laikago/laikago.urdf",[0,0,.5],[0,0.5,0.5,0])
-while True:
-    time.sleep(100)
+# test_robot = p.loadURDF("urdf/laikago/laikago.urdf",[0,0,.5],[0,0.5,0.5,0])
+# while True:
+#     time.sleep(100)
 
 
 # model  = UrdfWrapper("/root/RBDL/urdf/laikago/laikago.urdf").model
@@ -31,19 +28,19 @@ while True:
 
 
 
-# model["jtype"] = np.asarray(model["jtype"])
-# model["parent"] = np.asarray(model["parent"])
+model["jtype"] = np.asarray(model["jtype"])
+model["parent"] = np.asarray(model["parent"])
 
 # contact_foot = [13,10,7,4]
 
 # print("jaxis:",model['jaxis'])
 # print("jtype:",model['jtype'])
 
-# rder = ObdlRender(model)
-# time.sleep(1)
-# q = [0.0] * 14
-# q[1] = 1.57
-# rder.step_render(q)
+rder = ObdlRender(model)
+time.sleep(1)
+q = [0.0] * 14
+q[1] = 1.57
+rder.step_render(q)
 
 # num_b = model['jtype'].shape[0] + 1
 # for i in range(num_b):
@@ -53,5 +50,19 @@ while True:
 #     # info = rder.p.getContactPoints(0,i)
 #     print(info)
 
-# while(True):
-#     time.sleep(0.5)
+with open("examples/data1.txt","r") as filestream:
+    for line in filestream:
+        currentline = line.split(",")
+        frame = currentline[0]
+        t = currentline[1]
+        joints=[float(x) for x in currentline[2:14] ]
+        joints.insert(0,1.57)
+        joints.insert(0,0)
+
+        rder.step_render(joints)
+
+        time.sleep(1./500.)
+
+print("loop is over")
+while(True):
+    time.sleep(0.5)
