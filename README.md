@@ -47,7 +47,11 @@ Issue: RBDL returns a very large acceleration given a small force and immediatel
 
 ### Quadropedal Robot
 This is a quadrupedal robot(UNITREE) rendered using a pre-generated trajectory.
-![](assets/quadropedal.gif)
+![](assets/quadrupedal.gif)
+```
+python examples/quadrupedal.py
+```
+
 
 
 <!-- ### Rocket Landing
