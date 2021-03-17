@@ -4,6 +4,8 @@ from jaxRBDL.Simulator.ObdlSim import ObdlSim
 from jaxRBDL.Dynamics.ForwardDynamics import ForwardDynamics, ForwardDynamicsCore
 from envs.core import Env
 import gym
+import jax
+import jax.numpy as jnp
 
 
 class Qaudrupedal(Env):
@@ -15,15 +17,19 @@ class Qaudrupedal(Env):
     def __init__(self, reward_fn=None, seed=0):
         self.dt = 0.02
         self.target = jnp.zeros(14)
-        self.target[1] = 1.57
+        self.target = jax.ops.index_update(self.target, 1, 1.57)
 
-        #front and rear left leg lift up
-        self.target[6] = 0.9
-        self.target[12] = 0.9
+        #joint number 6,9 front and rear left leg lift up
+        self.target = jax.ops.index_update(self.target, 6, 0.9)
+        self.target = jax.ops.index_update(self.target, 9, 0.9)
 
-        self.model = UrdfWrapper("urdf/laikago/laikago.urdf").model
+        model = UrdfWrapper("urdf/laikago/laikago.urdf").model
+        model["jtype"] = jnp.asarray(model["jtype"])
+        model["parent"] = jnp.asarray(model["parent"])
+
+        self.model = model
         # self.osim = ObdlSim(self.model,dt=self.dt,vis=True)
-        self.rder = ObdlRender(model)
+        self.rder = ObdlRender(self.model)
 
 
         def _dynamics(state, action):
@@ -36,20 +42,22 @@ class Qaudrupedal(Env):
             # qdot = jnp.zeros(14)
             # torque = jnp.zeros(14)
             # torque[3] = 0.5
-            # print("q",q)
-            # print("qdot",qdot)
-            # print("force",force)
+            print("q",q)
+            print("qdot",qdot)
+            print("torque",torque)
             input = (self.model, q, qdot, torque)
             qddot = ForwardDynamics(*input)
-            # print("accelerations",accelerations)
+            print("can't forward once?")
+            qddot = qddot.flatten()
+            print("qddot",qddot)
 
             #step one forward
             # for j in range(2,14):
             #     q[j] = q[j] + dt * qdot[j]
-            #     qdot[j] = qdot[j] + dt * accelerations[j]
+            #     qdot[j] = qdot[j] +  dt * accelerations[j]
             for i in range(2,14):
                 q = jax.ops.index_add(q, i, self.dt * qdot[i]) 
-                qdot = jax.ops.index_add(qdot, i, self.dt * qddot[i][0])
+                qdot = jax.ops.index_add(qdot, i, self.dt * qddot[i])
 
             return jnp.array([q, qdot])
             
@@ -57,12 +65,16 @@ class Qaudrupedal(Env):
         self.dynamics = _dynamics
 
     def reset(self):
-        q = jax.random.uniform(
-            self.random.get_key(), shape=(14,), minval=-0.05, maxval=0.05
-        )
-        qdot = jax.random.uniform(
-            self.random.get_key(), shape=(14,), minval=-0.05, maxval=0.05
-        )
+        # q = jax.random.uniform(
+        #     self.random.get_key(), shape=(14,), minval=-0.05, maxval=0.05
+        # )
+        q = jnp.zeros(14)
+        q = jax.ops.index_update(q, 1, 1.57)
+
+        # qdot = jax.random.uniform(
+        #     self.random.get_key(), shape=(14,), minval=-0.05, maxval=0.05
+        # )
+        qdot = jnp.zeros(14)
         self.state = jnp.array([q,qdot])
         return self.state
 
@@ -94,4 +106,4 @@ class Qaudrupedal(Env):
     def osim_render(self):
         q, _ = self.state
         # print("q for render",q)
-        rder.step_render(q)
+        self.rder.step_render(q)

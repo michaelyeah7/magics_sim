@@ -75,6 +75,7 @@ for j in range(episodes_num):
     env.reset()           
     print("episode:{%d}" % j)
     for i in range(T):
+        print("step:{%d}" % i)
         (env, agent), r, done= loop((env, agent), 0)
         loss += r
         if done:

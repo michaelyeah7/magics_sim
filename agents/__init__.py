@@ -15,7 +15,7 @@ from agents._deep_cartpole import Deep_Cartpole
 from agents._deep_cartpole_rbdl import Deep_Cartpole_rbdl
 from agents._deep_arm_rbdl import Deep_Arm_rbdl
 from agents._deep_rocket import Deep_Rocket
-from agents._deep_quadrupedal import Deep_Quadrupedal
+from agents._deep_quadrupedal import Deep_Qaudrupedal
 
 
 
