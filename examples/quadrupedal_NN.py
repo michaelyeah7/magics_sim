@@ -67,15 +67,15 @@ render = True
 reward = 0
 loss = 0
 episode_loss = []
-episodes_num = 1000
-T = 1000
+episodes_num = 100
+T = 100
 for j in range(episodes_num):
 
     loss = 0
     env.reset()           
     print("episode:{%d}" % j)
     for i in range(T):
-        print("step:{%d}" % i)
+        
         (env, agent), r, done= loop((env, agent), 0)
         loss += r
         if done:

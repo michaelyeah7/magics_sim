@@ -62,7 +62,7 @@ class Arm_rbdl(Env):
         self.tau = 0.1  # seconds between state updates
         self.kinematics_integrator = "euler"
         self.viewer = None
-        self.target = jnp.array([0,0,0,0,0,0,0])
+        self.target = jnp.array([0,0,0,0,0,0,1.57])
         # Angle at which to fail the episode
         # Angle at which to fail the episode
         self.theta_threshold_radians = math.pi / 2
@@ -84,14 +84,14 @@ class Arm_rbdl(Env):
             # q = jnp.array(state[0])
             # qdot = jnp.array(state[1])
             # torque = jnp.array(action)
-            print("q",q)
-            print("qdot",qdot)
-            print("torque",torque)
+            # print("q",q)
+            # print("qdot",qdot)
+            # print("torque",torque)
             input = (self.model, q, qdot, torque)
             #ForwardDynamics return shape(NB, 1) array
             qddot = ForwardDynamics(*input)
             qddot = jnp.clip(qddot,0,0.5)
-            print("qddot",qddot)
+            # print("qddot",qddot)
             # print("xacc",xacc)
             # print("thetaacc",thetaacc)
 
@@ -104,13 +104,14 @@ class Arm_rbdl(Env):
             # _q = jnp.zeros((7,))
             # _qdot = jnp.zeros((7,))
             for i in range(2,len(q)):
-                q = jax.ops.index_add(q, i, self.tau * qdot[i]) 
                 qdot = jax.ops.index_add(qdot, i, self.tau * qddot[i][0])
+                q = jax.ops.index_add(q, i, self.tau * qdot[i]) 
+            qdot = jnp.zeros(7)    
             # q[0] = 0
             # qdot[0] = 0
-            jax.ops.index_update(q, 0, 0.)
+            # q = jax.ops.index_update(q, 0, 0.)
             # print("q[0]".q[0])
-            jax.ops.index_update(qdot, 0, 0.)
+            # qdot = jax.ops.index_update(qdot, 0, 0.)
 
             # jax.ops.index_add(q, 0, 6.)
             # _q[0] = q[0] + self.tau * qdot[0]

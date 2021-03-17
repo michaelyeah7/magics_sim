@@ -16,6 +16,8 @@ class Qaudrupedal(Env):
     """   
     def __init__(self, reward_fn=None, seed=0):
         self.dt = 0.02
+        self.q_threshold = 1.0
+        self.qdot_threshold = 0.2
         self.target = jnp.zeros(14)
         self.target = jax.ops.index_update(self.target, 1, 1.57)
 
@@ -35,21 +37,16 @@ class Qaudrupedal(Env):
         def _dynamics(state, action):
             
             q, qdot = state
-            torque = action
+            torque = action/1000
 
-            # q = state
-            # q = jnp.zeros(14)
-            # qdot = jnp.zeros(14)
-            # torque = jnp.zeros(14)
-            # torque[3] = 0.5
-            print("q",q)
-            print("qdot",qdot)
-            print("torque",torque)
+
+            # print("q",q)
+            # print("qdot",qdot)
+            # print("torque",torque)
             input = (self.model, q, qdot, torque)
             qddot = ForwardDynamics(*input)
-            print("can't forward once?")
             qddot = qddot.flatten()
-            print("qddot",qddot)
+            # print("qddot",qddot)
 
             #step one forward
             # for j in range(2,14):
@@ -85,6 +82,11 @@ class Qaudrupedal(Env):
         done = False
         # if (len(q[q>self.theta_threshold_radians]) >0):
         #     print("q in done",q)
+        #     done = True
+
+        # if (len(qdot[qdot>self.qdot_threshold]) >0):
+        # if (len(q[q>self.q_threshold]) >0):  
+        #     # print("q in done",q)
         #     done = True
 
         # reward = 1 - done
