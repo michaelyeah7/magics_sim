@@ -23,8 +23,8 @@ f_grad = jax.grad(forward,argnums=1)
 def loop(context, x):
     env, agent = context
     if(render==True):
-        env.render()
-        # env.osim_render()
+        # env.render()
+        env.osim_render()
         # env.py_bullet_render()
     control = agent(env.state, agent.params)
     prev_state = copy.deepcopy(env.state)
@@ -56,9 +56,9 @@ agent = Deep_Cartpole_rbdl(
              max_episode_length = 500,
              seed = 0
             )
-loaded_params = pickle.load( open( "examples/cartpole_rbdl_params_episode_20_2021-03-07 00:16:03.txt", "rb" ) )
+# loaded_params = pickle.load( open( "examples/cartpole_rbdl_params_episode_20_2021-03-07 00:16:03.txt", "rb" ) )
 
-agent.params = loaded_params
+# agent.params = loaded_params
 
  # for loop version
 # xs = jnp.array(jnp.arange(T))

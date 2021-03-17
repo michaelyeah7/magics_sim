@@ -59,10 +59,11 @@ class Arm_rbdl(Env):
     """
 
     def __init__(self, reward_fn=None, seed=0):
-        self.tau = 0.1  # seconds between state updates
+        self.tau = 0.01  # seconds between state updates
         self.kinematics_integrator = "euler"
         self.viewer = None
-        self.target = jnp.array([0,0,0,0,0,0,1.57])
+        self.target = jnp.array([0,0,0,0,1.57,0,0])
+        self.qdot_target = jnp.zeros(7)
         # Angle at which to fail the episode
         # Angle at which to fail the episode
         self.theta_threshold_radians = math.pi / 2
@@ -79,7 +80,7 @@ class Arm_rbdl(Env):
         # @jax.jit
         def _dynamics(state, action):
             q, qdot = state
-            torque = action/100 
+            torque = action/10
             #calculate xacc & thetaacc using jaxRBDL
             # q = jnp.array(state[0])
             # qdot = jnp.array(state[1])
@@ -90,7 +91,8 @@ class Arm_rbdl(Env):
             input = (self.model, q, qdot, torque)
             #ForwardDynamics return shape(NB, 1) array
             qddot = ForwardDynamics(*input)
-            qddot = jnp.clip(qddot,0,0.5)
+            qddot = qddot.flatten()
+            # qddot = jnp.clip(qddot,0,0.5)
             # print("qddot",qddot)
             # print("xacc",xacc)
             # print("thetaacc",thetaacc)
@@ -103,10 +105,16 @@ class Arm_rbdl(Env):
 
             # _q = jnp.zeros((7,))
             # _qdot = jnp.zeros((7,))
+
             for i in range(2,len(q)):
-                qdot = jax.ops.index_add(qdot, i, self.tau * qddot[i][0])
+                qdot = jax.ops.index_add(qdot, i, self.tau * qddot[i])
                 q = jax.ops.index_add(q, i, self.tau * qdot[i]) 
-            qdot = jnp.zeros(7)    
+
+            # qdot = qdot + self.tau * qddot
+            # q = q + self.tau * qdot
+            
+
+            # qdot = jnp.zeros(7)    
             # q[0] = 0
             # qdot[0] = 0
             # q = jax.ops.index_update(q, 0, 0.)
@@ -172,13 +180,14 @@ class Arm_rbdl(Env):
         # # x, x_dot, theta, theta_dot = state
         # reward = state[0]**2 + (state[1])**2 + 100*state[2]**2 + state[3]**2 
         # # reward = jnp.exp(state[0])-1 + state[2]**2 + state[3]**2 
-        q, qdot = self.state
-        reward = jnp.sum(jnp.square(q - self.target))
+        q, qdot = state
+        reward = jnp.log(jnp.sum(jnp.square(q - self.target)))
+        # reward = jnp.linalg.norm(jnp.square(q - self.target)) + jnp.linalg.norm(jnp.square(qdot - self.qdot_target))
 
         return reward
 
 
     def osim_render(self):
         q, _ = self.state
-        print("q for render",q)
+        # print("q for render",q)
         self.osim.step_theta(q)
