@@ -25,6 +25,8 @@ class Qaudrupedal(Env):
         self.target = jax.ops.index_update(self.target, 6, 0.9)
         self.target = jax.ops.index_update(self.target, 9, 0.9)
 
+        self.qdot_target = jnp.zeros(14)
+
         model = UrdfWrapper("urdf/laikago/laikago.urdf").model
         model["jtype"] = jnp.asarray(model["jtype"])
         model["parent"] = jnp.asarray(model["parent"])
@@ -37,7 +39,7 @@ class Qaudrupedal(Env):
         def _dynamics(state, action):
             
             q, qdot = state
-            torque = action/1000
+            torque = action/10
 
 
             # print("q",q)
@@ -99,8 +101,9 @@ class Qaudrupedal(Env):
         # # x, x_dot, theta, theta_dot = state
         # reward = state[0]**2 + (state[1])**2 + 100*state[2]**2 + state[3]**2 
         # # reward = jnp.exp(state[0])-1 + state[2]**2 + state[3]**2 
-        q, qdot = self.state
-        reward = jnp.sum(jnp.square(q - self.target))
+        q, qdot = state
+        # reward = jnp.log(jnp.sum(jnp.square(q - self.target))) + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target)))
+        reward = jnp.log((q[6]-0.9)**2) + jnp.log((q[9]-0.9)**2) 
 
         return reward
 

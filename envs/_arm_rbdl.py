@@ -62,8 +62,9 @@ class Arm_rbdl(Env):
         self.tau = 0.01  # seconds between state updates
         self.kinematics_integrator = "euler"
         self.viewer = None
-        self.target = jnp.array([0,0,0,0,1.57,0,0])
+        self.target = jnp.array([0,0,0,0,0,1.57,0])
         self.qdot_target = jnp.zeros(7)
+        self.qdot_threshold = 100.0
         # Angle at which to fail the episode
         # Angle at which to fail the episode
         self.theta_threshold_radians = math.pi / 2
@@ -81,9 +82,6 @@ class Arm_rbdl(Env):
         def _dynamics(state, action):
             q, qdot = state
             torque = action/10
-            #calculate xacc & thetaacc using jaxRBDL
-            # q = jnp.array(state[0])
-            # qdot = jnp.array(state[1])
             # torque = jnp.array(action)
             # print("q",q)
             # print("qdot",qdot)
@@ -94,51 +92,15 @@ class Arm_rbdl(Env):
             qddot = qddot.flatten()
             # qddot = jnp.clip(qddot,0,0.5)
             # print("qddot",qddot)
-            # print("xacc",xacc)
-            # print("thetaacc",thetaacc)
 
-            # _q_0 = q[0] + self.tau * qdot[0]
-            # _qdot_0 = qdot[0] + self.tau * qddot[0][0]
-
-            # q = jnp.ones((7,)) * _q_0
-            # qdot = jnp.ones((7,)) * _qdot_0
-
-            # _q = jnp.zeros((7,))
-            # _qdot = jnp.zeros((7,))
-
-            for i in range(2,len(q)):
+             
+            for i in range(2,len(q)-1):
                 qdot = jax.ops.index_add(qdot, i, self.tau * qddot[i])
                 q = jax.ops.index_add(q, i, self.tau * qdot[i]) 
-
-            # qdot = qdot + self.tau * qddot
-            # q = q + self.tau * qdot
-            
-
-            # qdot = jnp.zeros(7)    
-            # q[0] = 0
-            # qdot[0] = 0
-            # q = jax.ops.index_update(q, 0, 0.)
-            # print("q[0]".q[0])
-            # qdot = jax.ops.index_update(qdot, 0, 0.)
-
-            # jax.ops.index_add(q, 0, 6.)
-            # _q[0] = q[0] + self.tau * qdot[0]
-            # _qdot[0] = qdot[0] + self.tau * qddot[0][0] 
-            # _q[1] = q[1] + self.tau * qdot[1]
-            # _qdot[1] = qdot[1] + self.tau * qddot[1][0]  
-            # _q[2] = q[2] + self.tau * qdot[2]
-            # _qdot[2] = qdot[2] + self.tau * qddot[2][0] 
-            # _q[3] = q[3] + self.tau * qdot[3]
-            # _qdot[3] = qdot[3] + self.tau * qddot[3][0] 
-            # _q[4] = q[4] + self.tau * qdot[4]
-            # _qdot[4] = qdot[4] + self.tau * qddot[4][0] 
-            # _q[5] = q[5] + self.tau * qdot[5]
-            # _qdot[5] = qdot[5] + self.tau * qddot[5][0] 
-            # _q[6] = q[6] + self.tau * qdot[6]
-            # _qdot[6] = qdot[6] + self.tau * qddot[6][0] 
-
-            # q = _q
-            # qdot = _qdot
+            # qdot = jnp.zeros(7) 
+            # print("q[5]",q[5])
+            # print("qddot",qddot)
+            # print("qdot",qdot)
 
             return jnp.array([q, qdot])
         
@@ -166,9 +128,9 @@ class Arm_rbdl(Env):
         #     None,
         # )
         done = False
-        # if (len(q[q>self.theta_threshold_radians]) >0):
-        #     print("q in done",q)
-        #     done = True
+        if (len(qdot[qdot>self.qdot_threshold]) >0):
+            # print("q in done",q)
+            done = True
 
         # reward = 1 - done
         reward = self.reward_func(self.state)
@@ -181,7 +143,10 @@ class Arm_rbdl(Env):
         # reward = state[0]**2 + (state[1])**2 + 100*state[2]**2 + state[3]**2 
         # # reward = jnp.exp(state[0])-1 + state[2]**2 + state[3]**2 
         q, qdot = state
-        reward = jnp.log(jnp.sum(jnp.square(q - self.target)))
+        # print("q in reward",q)
+        # print("qdot in reward", qdot)
+        # reward = jnp.log(jnp.sum(jnp.square(q - self.target))) + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target))) 
+        reward = jnp.log((q[5]-1.57)**2) + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target)))
         # reward = jnp.linalg.norm(jnp.square(q - self.target)) + jnp.linalg.norm(jnp.square(qdot - self.qdot_target))
 
         return reward

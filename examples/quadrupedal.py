@@ -217,5 +217,5 @@ if __name__ == "__main__":
     # laikago_dynamics_test()
     # laikago_trajectory()
 #     target_pos()
-    test_gradient()
+    # test_gradient()
 
