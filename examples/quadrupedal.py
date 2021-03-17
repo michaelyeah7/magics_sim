@@ -5,8 +5,8 @@ from jaxRBDL.Simulator.ObdlSim import ObdlSim
 import time
 import numpy as np
 import pybullet as p
-# from jaxRBDL.Dynamics.ForwardDynamics import ForwardDynamics, ForwardDynamicsCore
-from pyRBDL.Dynamics.ForwardDynamics import ForwardDynamics
+from jaxRBDL.Dynamics.ForwardDynamics import ForwardDynamics, ForwardDynamicsCore
+# from pyRBDL.Dynamics.ForwardDynamics import ForwardDynamics
 
 def arm_test():
     dt = 0.001
@@ -63,7 +63,7 @@ def laikago_trajectory():
     print("loop is over")
 
 
-def laikago_test():
+def laikago_dynamics_test():
     tau = 0.1
     model = UrdfWrapper("urdf/laikago/laikago.urdf").model
 
@@ -133,8 +133,9 @@ def target_pos():
     model["parent"] = np.asarray(model["parent"])
     rder = ObdlRender(model)
     q = np.array([0.0] * 14)
-    q[5] = 0.9
-    q[11] = 0.9
+    q[1] = 1.57
+    q[6] = 0.9
+    q[12] = 0.9
 
     
 
@@ -146,7 +147,7 @@ def target_pos():
 
 if __name__ == "__main__":
     # arm_test()
-    # laikago_test()
+    laikago_dynamics_test()
     # laikago_trajectory()
-    target_pos()
+#     target_pos()
 

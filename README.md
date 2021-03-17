@@ -64,6 +64,8 @@ Control a rocket to landing. -->
 ## QuickStart
 ```
 pip install -r requirements.txt
+#for container env
+export MESA_GL_VERSION_OVERRIDE=4.3
 export PYTHONPATH=$PYTHONPATH:$(PWD)
 python examples/cartpole_NN.py
 ```
