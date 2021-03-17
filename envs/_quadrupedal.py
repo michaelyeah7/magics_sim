@@ -15,9 +15,9 @@ class Qaudrupedal(Env):
         the previous two are one virtual joint and a base to chasis joint.
     """   
     def __init__(self, reward_fn=None, seed=0):
-        self.dt = 0.02
+        self.dt = 0.01
         self.q_threshold = 1.0
-        self.qdot_threshold = 0.2
+        self.qdot_threshold = 100
         self.target = jnp.zeros(14)
         self.target = jax.ops.index_update(self.target, 1, 1.57)
 
@@ -39,7 +39,7 @@ class Qaudrupedal(Env):
         def _dynamics(state, action):
             
             q, qdot = state
-            torque = action/10
+            torque = action
 
 
             # print("q",q)
@@ -57,6 +57,9 @@ class Qaudrupedal(Env):
             for i in range(2,14):
                 q = jax.ops.index_add(q, i, self.dt * qdot[i]) 
                 qdot = jax.ops.index_add(qdot, i, self.dt * qddot[i])
+
+            # print("qddot",qddot)
+            # print("qdot",qdot)
 
             return jnp.array([q, qdot])
             
@@ -86,10 +89,10 @@ class Qaudrupedal(Env):
         #     print("q in done",q)
         #     done = True
 
-        # if (len(qdot[qdot>self.qdot_threshold]) >0):
+        if (len(qdot[qdot>self.qdot_threshold]) >0):
         # if (len(q[q>self.q_threshold]) >0):  
-        #     # print("q in done",q)
-        #     done = True
+            # print("q in done",q)
+            done = True
 
         # reward = 1 - done
         reward = self.reward_func(self.state)
@@ -102,8 +105,8 @@ class Qaudrupedal(Env):
         # reward = state[0]**2 + (state[1])**2 + 100*state[2]**2 + state[3]**2 
         # # reward = jnp.exp(state[0])-1 + state[2]**2 + state[3]**2 
         q, qdot = state
-        # reward = jnp.log(jnp.sum(jnp.square(q - self.target))) + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target)))
-        reward = jnp.log((q[6]-0.9)**2) + jnp.log((q[9]-0.9)**2) 
+        reward = jnp.log(jnp.sum(jnp.square(q - self.target))) + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target)))
+        # reward = jnp.log((q[6]-0.9)**2) + jnp.log((q[9]-0.9)**2) 
 
         return reward
 

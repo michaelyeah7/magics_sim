@@ -67,7 +67,7 @@ render = True
 reward = 0
 loss = 0
 episode_loss = []
-episodes_num = 100
+episodes_num = 500
 T = 100
 for j in range(episodes_num):
 
@@ -87,8 +87,8 @@ for j in range(episodes_num):
         # reward += r
     episode_loss.append(loss)
     print("loss is %f and lasts for %d steps" % (loss,i))
-    if (j%10==0 and j!=0 and update_params==True):
-        with open("examples/arm_rbdl_params"+ "_episode_%d_" % j + strftime("%Y-%m-%d %H:%M:%S", gmtime()) +".txt", "wb") as fp:   #Pickling
+    if (j%50==0 and j!=0 and update_params==True):
+        with open("examples/qudrupedal_params"+ "_episode_%d_" % j + strftime("%Y-%m-%d %H:%M:%S", gmtime()) +".txt", "wb") as fp:   #Pickling
             pickle.dump(agent.params, fp)
 # reward_forloop = reward
 # print('reward_forloop = ' + str(reward_forloop))
