@@ -55,8 +55,8 @@ agent = Deep_Arm_rbdl(
              max_episode_length = 500,
              seed = 0
             )
-loaded_params = pickle.load( open( "examples/arm_rbdl_params_episode_50_2021-03-17 18:45:11.txt", "rb" ) )
-agent.params = loaded_params
+# loaded_params = pickle.load( open( "examples/arm_rbdl_params_episode_50_2021-03-17 18:45:11.txt", "rb" ) )
+# agent.params = loaded_params
 
  # for loop version
 # xs = jnp.array(jnp.arange(T))
