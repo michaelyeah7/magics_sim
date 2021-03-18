@@ -80,7 +80,7 @@ class Deep_Arm_rbdl(Agent):
             return [(scale * rng.randn(m, n), scale * rng.randn(n))
                 for m, n, in zip(layer_sizes[:-1], layer_sizes[1:])]
 
-        layer_sizes = [self.env_state_size, 32, 32, len(self.action_space)]
+        layer_sizes = [self.env_state_size, 128, 128, len(self.action_space)]
         param_scale = 0.1
         self.params = init_random_params(param_scale, layer_sizes)
 
@@ -118,7 +118,8 @@ class Deep_Arm_rbdl(Agent):
         activations = state
         for w, b in params[:-1]:
             outputs = jnp.dot(activations, w) + b
-            activations = jnp.tanh(outputs)
+            # activations = jnp.tanh(outputs)
+            activations = jax.nn.relu(outputs)
         final_w, final_b = params[-1]
         logits = jnp.dot(activations, final_w) + final_b
         # print("logits",logits)
