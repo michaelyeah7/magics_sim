@@ -17,7 +17,7 @@ class Qaudrupedal(Env):
     def __init__(self, reward_fn=None, seed=0):
         self.dt = 0.01
         self.q_threshold = 1.0
-        self.qdot_threshold = 100
+        self.qdot_threshold = 1000
         self.target = jnp.zeros(14)
         self.target = jax.ops.index_update(self.target, 1, 1.57)
 
