@@ -62,7 +62,11 @@ Control a rocket to landing. -->
 ![](assets/rigid_body.png) -->
 
 ## QuickStart
+
 ```
+#Install miniconda
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+#create env and install dependencies
 pip install -r requirements.txt
 #for container env
 export MESA_GL_VERSION_OVERRIDE=4.3

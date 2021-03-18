@@ -8,6 +8,8 @@ import copy
 import pickle
 from time import gmtime, strftime 
 from jaxRBDL.Dynamics.ForwardDynamics import ForwardDynamics, ForwardDynamicsCore
+from sklearn.preprocessing import normalize
+import numpy as np
 
 def forward(state, w, env, agent):
     action = agent.__call__(state, w)
@@ -36,6 +38,12 @@ def loop(context, x):
     # print("prev_state",prev_state)
     if (update_params==True):
         grads = f_grad(prev_state, agent.params, env, agent)
+        
+        for (dw,db) in grads:
+            # print("previous dw",dw)
+            dw = normalize(dw)
+            db = normalize(db[:,np.newaxis],axis =0).ravel()
+            # print("lateral dw",dw)
         # print("grads",grads)
         agent.params = [(w - agent.lr * dw, b - agent.lr * db)
                 for (w, b), (dw, db) in zip(agent.params, grads)]

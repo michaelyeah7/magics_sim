@@ -118,8 +118,8 @@ class Deep_Arm_rbdl(Agent):
         activations = state
         for w, b in params[:-1]:
             outputs = jnp.dot(activations, w) + b
-            activations = jnp.tanh(outputs)
-            # activations = jax.nn.relu(outputs)
+            # activations = jnp.tanh(outputs)
+            activations = jax.nn.relu(outputs)
         final_w, final_b = params[-1]
         logits = jnp.dot(activations, final_w) + final_b
         # print("logits",logits)

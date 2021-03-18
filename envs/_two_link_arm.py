@@ -62,7 +62,7 @@ class Two_Link_Arm(Env):
         self.tau = 0.01  # seconds between state updates
         self.kinematics_integrator = "euler"
         self.viewer = None
-        self.target = jnp.array([0,0,0,1.57])
+        self.target = jnp.array([0,0,0,-1.57])
         self.qdot_target = jnp.zeros(4)
         self.q_threshold = 3.14
         self.qdot_threshold = 100.0
@@ -79,6 +79,7 @@ class Two_Link_Arm(Env):
         def _dynamics(state, action):
             q, qdot = state
             torque = action/20
+            # torque = jnp.clip(torque,-50,50)
             # torque = jnp.array(action)
             # print("q",q)
             # print("qdot",qdot)
@@ -96,9 +97,10 @@ class Two_Link_Arm(Env):
                 q = jax.ops.index_add(q, i, self.tau * qdot[i]) 
             # qdot = jnp.zeros(7) 
             # print("q[5]",q[5])
-            print("qddot",qddot)
-            print("qdot",qdot)
-            print("q",q)
+            # print("qddot",qddot)
+            # print("qdot",qdot)
+            # print("q",q)
+            # jnp.clip(q, -20,20)
 
             return jnp.array([q, qdot])
         
@@ -141,11 +143,13 @@ class Two_Link_Arm(Env):
         # reward = state[0]**2 + (state[1])**2 + 100*state[2]**2 + state[3]**2 
         # # reward = jnp.exp(state[0])-1 + state[2]**2 + state[3]**2 
         q, qdot = state
+
         # print("q in reward",q)
         # print("qdot in reward", qdot)
         # reward = jnp.sum(jnp.square(q - self.target)) + jnp.sum(jnp.square(qdot - self.qdot_target))
-        reward = (q[3]-1.57)**2 + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target)))
+        reward = jnp.exp((q[3]-1.57)**2) + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target)))
         # reward = jnp.linalg.norm(jnp.square(q - self.target)) + jnp.linalg.norm(jnp.square(qdot - self.qdot_target))
+        # reward = (q[3]+1.57)**2 + jnp.log(qdot[3]**2)
 
         return reward
 
