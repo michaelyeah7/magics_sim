@@ -12,36 +12,38 @@ import jax.numpy as jnp
 
 def arm_test():
     dt = 0.001
-    model = UrdfWrapper("urdf/arm.urdf").model
+    model = UrdfWrapper("urdf/two_link_arm.urdf").model
     model["jtype"] = np.asarray(model["jtype"])
     model["parent"] = np.asarray(model["parent"])
     rder = ObdlRender(model)
     time.sleep(1)
-    q = np.array([0.0] * 7)
-    q[3] = 1.57
+    q = np.array([0.0] * 4)
+    q[3] = 100
     qdot = np.array([0.0] * 7)
     torque = np.array([0.0] * 7)
     torque[5] = 0.001
-
-    for i in range(1000):
-        q[3] = 1.57
-        input = (model, q, qdot, torque)
-        accelerations = ForwardDynamics(*input)
-        
-
-        # print("shape acc",accelerations.shape())
-        accelerations = accelerations.flatten()
-        print("accelerations",accelerations)
-
-        #step one forward
-        
-        for j in range(2,7):
-            q[j] = q[j] + dt * qdot[j]
-            qdot[j] = qdot[j] + dt * accelerations[j]
-        # print("qdot",qdot)
-        print("q",q)
-
+    while True:
         rder.step_render(q)
+
+    # for i in range(1000):
+    #     q[3] = 1.57
+    #     input = (model, q, qdot, torque)
+    #     accelerations = ForwardDynamics(*input)
+        
+
+    #     # print("shape acc",accelerations.shape())
+    #     accelerations = accelerations.flatten()
+    #     print("accelerations",accelerations)
+
+    #     #step one forward
+        
+    #     for j in range(2,7):
+    #         q[j] = q[j] + dt * qdot[j]
+    #         qdot[j] = qdot[j] + dt * accelerations[j]
+    #     # print("qdot",qdot)
+    #     print("q",q)
+
+    #     rder.step_render(q)
 
 def laikago_trajectory():
 
@@ -213,7 +215,7 @@ def test_gradient():
 
 
 if __name__ == "__main__":
-    # arm_test()
+    arm_test()
     # laikago_dynamics_test()
     # laikago_trajectory()
 #     target_pos()
