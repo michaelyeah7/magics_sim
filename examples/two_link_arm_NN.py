@@ -58,14 +58,22 @@ agent = Deep_Arm_rbdl(
              max_episode_length = 500,
              seed = 0
             )
-loaded_params = pickle.load( open( "examples/two_link_arm_params_episode_50_2021-03-19 21:51:42.txt", "rb" ) )
-agent.params = loaded_params
+
+# load_params = False
+# update_params = True
+# render = False
+
+load_params = True
+update_params = False
+render = True
+
+if load_params == True:
+    loaded_params = pickle.load( open( "examples/two_link_arm_params_episode_20_2021-03-19 23:00:16.txt", "rb" ) )
+    agent.params = loaded_params
 
  # for loop version
 # xs = jnp.array(jnp.arange(T))
-print(env.reset())
-update_params = False
-render = True
+# print(env.reset())
 reward = 0
 loss = 0
 episode_loss = []
@@ -103,7 +111,7 @@ for j in range(episodes_num):
 
     episode_loss.append(loss)
     print("loss is %f " % loss)
-    if (j%50==0 and j!=0 and update_params==True):
+    if (j%20==0 and j!=0 and update_params==True):
         with open("examples/two_link_arm_params"+ "_episode_%d_" % j + strftime("%Y-%m-%d %H:%M:%S", gmtime()) +".txt", "wb") as fp:   #Pickling
             pickle.dump(agent.params, fp)
 # reward_forloop = reward

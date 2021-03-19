@@ -62,7 +62,7 @@ class Two_Link_Arm(Env):
         self.tau = 0.01  # seconds between state updates
         self.kinematics_integrator = "euler"
         self.viewer = None
-        self.target = jnp.array([0,0,0,-1.57])
+        self.target = jnp.array([0,0,0,1.57])
         self.qdot_target = jnp.zeros(4)
         self.q_threshold = 3.14
         self.qdot_threshold = 100.0
@@ -146,8 +146,8 @@ class Two_Link_Arm(Env):
 
         # print("q in reward",q)
         # print("qdot in reward", qdot)
-        # reward = jnp.sum(jnp.square(q - self.target)) + jnp.sum(jnp.square(qdot - self.qdot_target))
-        reward = jnp.exp((q[3]-1.57)**2) + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target)))
+        reward = jnp.sum(jnp.square(q - self.target)) + jnp.sum(jnp.square(qdot - self.qdot_target))
+        # reward = jnp.exp((q[3] + 1.57)**2) + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target)))
         # reward = jnp.linalg.norm(jnp.square(q - self.target)) + jnp.linalg.norm(jnp.square(qdot - self.qdot_target))
         # reward = (q[3]+1.57)**2 + jnp.log(qdot[3]**2)
 
