@@ -78,7 +78,7 @@ class Two_Link_Arm(Env):
         # @jax.jit
         def _dynamics(state, action):
             q, qdot = state
-            torque = action/20
+            torque = action
             # torque = jnp.clip(torque,-50,50)
             # torque = jnp.array(action)
             # print("q",q)

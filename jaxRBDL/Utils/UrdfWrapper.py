@@ -135,7 +135,7 @@ def load_urdf(file_path):
 
     #grav
     a_grav = np.zeros((6,1))
-    # a_grav[5] = -9.81
+    a_grav[5] = -9.81
     model["a_grav"] = a_grav
 
     #jtype
