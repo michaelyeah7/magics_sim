@@ -29,6 +29,7 @@ This simulator contains several simple robotic envs written in [JAX](https://git
 ### Cart Pole
 
 ![](assets/cart_pole.gif)
+
 Control the cartpole using manually calculated forward dynamics. Training converges at very fast speed(first two episodes). The cartpole can keep upright for 200 timesteps.
 
 For this demo, dynamics is implemented by jaxRBDL. Training time takes 2 hours for 100 episodes on MAC. Can't tell any convergence from loss graph. The cartpole can keep upright for 57 timesteps.
@@ -43,7 +44,7 @@ A 7 link arm robot contains 6 joints. The first base_link to arm_link_0 fixed jo
 ```
 python examples/arm_NN_rbdl.py
 ```
-Issue: RBDL returns a very large acceleration given a small force and immediately reaches the threshold, so the episode ends at the first step.
+The goal is to reach a fixed pose(keep second-to-last joint 90 degrees), with only 20 episodes of training, it can reach the goal within 10cm.
 
 ### Quadropedal Robot
 This is a quadrupedal robot(UNITREE) rendered using a pre-generated trajectory.
