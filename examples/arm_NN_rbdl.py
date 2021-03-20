@@ -22,8 +22,6 @@ def forward(state, w, env, agent):
 
 def loop(context, x):
     env, agent, params = context
-    if(render==True):
-        env.osim_render()
     control = agent(env.state, params)
     prev_state = copy.deepcopy(env.state)
     _, reward, done, _ = env.step(env.state,control)
@@ -31,10 +29,11 @@ def loop(context, x):
     return (env, agent), reward, done
 
 def roll_out(env, agent, params):
+    gamma = 0.9
     losses = 0.0
     for i in range(100):
         (env, agent), r, done= loop((env, agent,params), i)
-        losses += r 
+        losses = losses * gamma + r 
         if done:
             print("end this episode because out of threshhold")
             env.past_reward = 0
@@ -43,7 +42,33 @@ def roll_out(env, agent, params):
     return losses
 
 f_grad = jax.grad(roll_out,argnums=2)
-# f_grad = jax.jit(jax.jacfwd(forward,argnums=1))
+
+
+def loop_for_render(context, x):
+    env, agent, params = context
+    if(render==True):
+        env.osim_render()
+    control = agent(env.state, params)
+    prev_state = copy.deepcopy(env.state)
+    _, reward, done, _ = env.step(env.state,control)
+
+    return (env, agent), reward, done
+
+def roll_out_for_render(env, agent, params):
+    gamma = 0.9
+    losses = 0.0
+    for i in range(100):
+        (env, agent), r, done= loop_for_render((env, agent,params), i)
+        losses = losses * gamma + r 
+        if done:
+            print("end this episode because out of threshhold")
+            env.past_reward = 0
+            break
+        
+    return losses
+
+f_grad = jax.grad(roll_out,argnums=2)
+
 
 # Deep
 env = Arm_rbdl()
@@ -58,10 +83,14 @@ agent = Deep_Arm_rbdl(
 
 load_params = False
 update_params = True
-render = False
+render = True
+
+# load_params = False
+# update_params = True
+# render = False
 
 if load_params == True:
-    loaded_params = pickle.load( open( "examples/arm_rbdl_params_episode_50_2021-03-17 18:45:11.txt", "rb" ) )
+    loaded_params = pickle.load( open( "examples/arm_rbdl_params_episode_40_2021-03-20 16:48:59.txt", "rb" ) )
     agent.params = loaded_params
 
  # for loop version
@@ -78,11 +107,13 @@ for j in range(episodes_num):
     env.reset()           
     print("episode:{%d}" % j)
 
-    loss = roll_out(env, agent, agent.params)
+    loss = roll_out_for_render(env, agent, agent.params)
 
     #update the parameter
     if (update_params==True):
+        env.reset() 
         # grads = f_grad(prev_state, agent.params, env, agent)
+
         grads = f_grad(env, agent, agent.params)
         #get norm square
         total_norm_sqr = 0                
@@ -93,6 +124,7 @@ for j in range(episodes_num):
             total_norm_sqr += np.linalg.norm(dw) ** 2
             total_norm_sqr += np.linalg.norm(db) ** 2
         # print("grads",grads)
+
         #scale the gradient
         gradient_clip = 0.2
         scale = min(
@@ -100,10 +132,13 @@ for j in range(episodes_num):
 
         agent.params = [(w - agent.lr * scale * dw, b - agent.lr * scale * db)
                 for (w, b), (dw, db) in zip(agent.params, grads)]
+        
+        # agent.params = [(w - agent.lr * dw, b - agent.lr * db)
+        #         for (w, b), (dw, db) in zip(agent.params, grads)]
 
     episode_loss.append(loss)
     print("loss is %f" % loss)
-    if (j%20==0 and j!=0 and update_params==True):
+    if (j%10==0 and j!=0 and update_params==True):
         with open("examples/arm_rbdl_params"+ "_episode_%d_" % j + strftime("%Y-%m-%d %H:%M:%S", gmtime()) +".txt", "wb") as fp:   #Pickling
             pickle.dump(agent.params, fp)
 # reward_forloop = reward

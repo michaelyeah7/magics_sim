@@ -62,7 +62,7 @@ class Arm_rbdl(Env):
         self.tau = 0.01  # seconds between state updates
         self.kinematics_integrator = "euler"
         self.viewer = None
-        self.target = jnp.array([0,0,0,0,0,1.57,0])
+        self.target = jnp.array([0,0,0,0,1.57,0,0])
         self.qdot_target = jnp.zeros(7)
         self.qdot_threshold = 100.0
         # Angle at which to fail the episode
@@ -127,13 +127,16 @@ class Arm_rbdl(Env):
         #     lambda done: False,
         #     None,
         # )
+
+        reward = self.reward_func(self.state)
+
         done = False
         if (len(qdot[qdot>self.qdot_threshold]) >0):
             # print("q in done",q)
             done = True
+            reward += 10
 
-        # reward = 1 - done
-        reward = self.reward_func(self.state)
+
 
         return self.state, reward, done, {}
 
@@ -145,7 +148,8 @@ class Arm_rbdl(Env):
         q, qdot = state
         # print("q in reward",q)
         # print("qdot in reward", qdot)
-        reward = jnp.log(jnp.sum(jnp.square(q - self.target))) + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target))) 
+        # reward = jnp.log(jnp.sum(jnp.square(q - self.target))) + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target))) 
+        reward = jnp.log(jnp.sum(jnp.square(q - self.target))) 
         # reward = jnp.log((q[5]-1.57)**2) + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target)))
         # reward = jnp.linalg.norm(jnp.square(q - self.target)) + jnp.linalg.norm(jnp.square(qdot - self.qdot_target))
 
