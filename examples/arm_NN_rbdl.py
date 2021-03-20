@@ -80,8 +80,8 @@ agent = Deep_Arm_rbdl(
              seed = 0
             )
 
-load_params = False
-update_params = True
+load_params = True
+update_params = False
 render = True
 
 # load_params = False
@@ -89,7 +89,7 @@ render = True
 # render = False
 
 if load_params == True:
-    loaded_params = pickle.load( open( "examples/arm_rbdl_params_episode_40_2021-03-20 16:48:59.txt", "rb" ) )
+    loaded_params = pickle.load( open( "examples/arm_rbdl_params_episode_20_2021-03-20 18:19:28.txt", "rb" ) )
     agent.params = loaded_params
 
  # for loop version
