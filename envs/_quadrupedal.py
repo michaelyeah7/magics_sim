@@ -39,7 +39,7 @@ class Qaudrupedal(Env):
         def _dynamics(state, action):
             
             q, qdot = state
-            torque = action
+            torque = action/100
 
 
             # print("q",q)
