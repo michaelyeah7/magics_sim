@@ -8,6 +8,7 @@ import copy
 import pickle
 from time import gmtime, strftime 
 from jaxRBDL.Dynamics.ForwardDynamics import ForwardDynamics, ForwardDynamicsCore
+import numpy as np
 
 def loop(context, x):
     env, agent, params = context
@@ -25,7 +26,7 @@ def roll_out(env, agent, params):
         (env, agent), r, done= loop((env, agent,params), i)
         losses += r 
         if done:
-            print("end this episode because out of threshhold")
+            print("end this episode because out of threshhold, total %d steps " % i)
             env.past_reward = 0
             break
         
@@ -50,16 +51,16 @@ agent = Deep_Qaudrupedal(
              seed = 0
             )
 
-load_params = False
-update_params = True
-render = False
+# load_params = False
+# update_params = True
+# render = False
 
-# load_params = True
-# update_params = False
-# render = True
+load_params = True
+update_params = False
+render = True
 
 if load_params == True:
-    loaded_params = pickle.load( open( "examples/cartpole_rbdl_params_episode_20_2021-03-07 00:16:03.txt", "rb" ) )
+    loaded_params = pickle.load( open( "examples/qudrupedal_params_episode_60_2021-03-20 04:37:23.txt", "rb" ) )
     agent.params = loaded_params
 
 reward = 0
