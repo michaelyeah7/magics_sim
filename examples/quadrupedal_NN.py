@@ -50,16 +50,16 @@ agent = Deep_Qaudrupedal(
              seed = 0
             )
 
-load_params = False
-update_params = True
-render = False
+# load_params = False
+# update_params = True
+# render = False
 
-# load_params = True
-# update_params = False
-# render = True
+load_params = True
+update_params = False
+render = True
 
 if load_params == True:
-    loaded_params = pickle.load( open( "examples/cartpole_rbdl_params_episode_20_2021-03-07 00:16:03.txt", "rb" ) )
+    loaded_params = pickle.load( open( "examples/cartpole_rbdl_params_episode_20_2021-03-19 23:39:17.txt", "rb" ) )
     agent.params = loaded_params
 
 reward = 0
