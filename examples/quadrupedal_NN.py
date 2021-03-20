@@ -12,8 +12,6 @@ import numpy as np
 
 def loop(context, x):
     env, agent, params = context
-    if(render==True):
-        env.osim_render()
     control = agent(env.state, params)
     prev_state = copy.deepcopy(env.state)
     _, reward, done, _ = env.step(env.state,control)
@@ -35,7 +33,29 @@ def roll_out(env, agent, params):
 # f_grad = jax.grad(forward,argnums=1)
 
 f_grad = jax.grad(roll_out,argnums=2)
-# f_grad = jax.jit(jax.jacfwd(forward,argnums=1))
+
+def loop_for_render(context, x):
+    env, agent, params = context
+    if(render==True):
+        env.osim_render()
+    control = agent(env.state, params)
+    prev_state = copy.deepcopy(env.state)
+    _, reward, done, _ = env.step(env.state,control)
+
+    return (env, agent), reward, done
+
+def roll_out_for_render(env, agent, params):
+    gamma = 0.9
+    losses = 0.0
+    for i in range(100):
+        (env, agent), r, done= loop_for_render((env, agent,params), i)
+        losses = losses * gamma + r 
+        if done:
+            print("end this episode because out of threshhold")
+            env.past_reward = 0
+            break
+        
+    return losses
 
 
 
@@ -55,8 +75,8 @@ agent = Deep_Qaudrupedal(
 # update_params = True
 # render = False
 
-load_params = True
-update_params = False
+load_params = False
+update_params = True
 render = True
 
 if load_params == True:
@@ -73,7 +93,7 @@ for j in range(episodes_num):
     loss = 0
     env.reset()           
     print("episode:{%d}" % j)
-    loss = roll_out(env, agent, agent.params)
+    loss = roll_out_for_render(env, agent, agent.params)
 
     #update the parameter
     if (update_params==True):
@@ -99,7 +119,7 @@ for j in range(episodes_num):
 
     episode_loss.append(loss)
     print("loss is %f " % loss)
-    if (j%20==0 and j!=0 and update_params==True):
+    if (j%10==0 and j!=0 and update_params==True):
         with open("examples/qudrupedal_params"+ "_episode_%d_" % j + strftime("%Y-%m-%d %H:%M:%S", gmtime()) +".txt", "wb") as fp:   #Pickling
             pickle.dump(agent.params, fp)
 # reward_forloop = reward

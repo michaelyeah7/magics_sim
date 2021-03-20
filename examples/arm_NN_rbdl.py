@@ -67,7 +67,6 @@ def roll_out_for_render(env, agent, params):
         
     return losses
 
-f_grad = jax.grad(roll_out,argnums=2)
 
 
 # Deep
