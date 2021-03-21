@@ -88,7 +88,7 @@ update_params = False
 render = True
 
 if load_params == True:
-    loaded_params = pickle.load( open( "examples/qudrupedal_params_episode_30_2021-03-20 23:50:40.txt", "rb" ) )
+    loaded_params = pickle.load( open( "examples/qudrupedal_params_episode_270_2021-03-21 16:41:06.txt", "rb" ) )
     agent.params = loaded_params
 
 reward = 0

@@ -107,7 +107,8 @@ class Qaudrupedal(Env):
         # # reward = jnp.exp(state[0])-1 + state[2]**2 + state[3]**2 
         q, qdot = state
         # reward = jnp.log(jnp.sum(jnp.square(q - self.target))) + jnp.log(jnp.sum(jnp.square(qdot - self.qdot_target)))
-        reward = jnp.log(jnp.sum(jnp.square(q - self.target))) 
+        # reward = jnp.log(jnp.sum(jnp.square(q - self.target))) 
+        reward = jnp.sum(jnp.square(q - self.target)) 
         # reward = jnp.log((q[6]-0.9)**2) + jnp.log((q[9]-0.9)**2) 
 
         return reward
