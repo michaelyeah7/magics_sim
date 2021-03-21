@@ -9,6 +9,12 @@ import pickle
 from time import gmtime, strftime 
 from jaxRBDL.Dynamics.ForwardDynamics import ForwardDynamics, ForwardDynamicsCore
 import numpy as np
+from jax.api import jit
+from functools import partial
+
+
+
+
 
 def loop(context, x):
     env, agent, params = context
@@ -18,6 +24,7 @@ def loop(context, x):
 
     return (env, agent), reward, done
 
+# @partial(jit, static_argnums=(0, 1))
 def roll_out(env, agent, params):
     losses = 0.0
     for i in range(100):
@@ -31,6 +38,7 @@ def roll_out(env, agent, params):
     return losses
 
 # f_grad = jax.grad(forward,argnums=1)
+
 
 f_grad = jax.grad(roll_out,argnums=2)
 
@@ -75,12 +83,12 @@ agent = Deep_Qaudrupedal(
 # update_params = True
 # render = False
 
-load_params = False
-update_params = True
+load_params = True
+update_params = False
 render = True
 
 if load_params == True:
-    loaded_params = pickle.load( open( "examples/qudrupedal_params_episode_60_2021-03-20 04:37:23.txt", "rb" ) )
+    loaded_params = pickle.load( open( "examples/qudrupedal_params_episode_30_2021-03-20 23:50:40.txt", "rb" ) )
     agent.params = loaded_params
 
 reward = 0

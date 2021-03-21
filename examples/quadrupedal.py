@@ -216,16 +216,8 @@ def test_gradient():
 
 if __name__ == "__main__":
     # arm_test()
-    # laikago_dynamics_test()
+    laikago_dynamics_test()
     # laikago_trajectory()
 #     target_pos()
     # test_gradient()
-    from sklearn.preprocessing import normalize
-    a = np.array([[1,2,3],[4,5,6]])
-    # normalized_a = a / np.sqrt(np.sum(a**2))
-    # a_sklearn = normalize(a[:,np.newaxis],axis=0)
-    a_np = np.linalg.norm(a)
-    # print("a_sklearn",a_sklearn)
-    # print("a_np",a_np)
-    print(min(1,2))
 

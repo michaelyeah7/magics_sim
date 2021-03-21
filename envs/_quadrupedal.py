@@ -6,6 +6,7 @@ from envs.core import Env
 import gym
 import jax
 import jax.numpy as jnp
+from jax.api import jit
 
 
 class Qaudrupedal(Env):
@@ -35,11 +36,11 @@ class Qaudrupedal(Env):
         # self.osim = ObdlSim(self.model,dt=self.dt,vis=True)
         self.rder = ObdlRender(self.model)
 
-
+        @jit
         def _dynamics(state, action):
             
             q, qdot = state
-            torque = action/10
+            torque = action/20
 
 
             # print("q",q)
