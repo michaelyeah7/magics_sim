@@ -73,12 +73,12 @@ Run on Magics Cluster
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     ```
 3. create env and install dependencies
-```
-pip install -r requirements.txt
-#upgrade jaxlib to cuda11 version
-pip install --upgrade jax jaxlib==0.1.61+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
-#enable GL 
-export MESA_GL_VERSION_OVERRIDE=4.3
-export PYTHONPATH=$PYTHONPATH:$PWD
-XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/local/cuda-11.2 python examples/cartpole_NN.py
-```
+    ```
+    pip install -r requirements.txt
+    #upgrade jaxlib to cuda11 version
+    pip install --upgrade jax jaxlib==0.1.61+cuda111 -f https://storage.googleapis.com/jax-releases/jax_releases.html
+    #enable GL 
+    export MESA_GL_VERSION_OVERRIDE=4.3
+    export PYTHONPATH=$PYTHONPATH:$PWD
+    XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/local/cuda-11.2 python examples/cartpole_NN.py
+    ```
