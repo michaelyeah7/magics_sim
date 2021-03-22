@@ -8,6 +8,9 @@ def DeterminContactType(pos: np.ndarray, vel: np.ndarray, contact_cond: dict)->i
     contact_pos_lb = contact_cond["contact_pos_lb"].flatten()
     contact_vel_lb = contact_cond["contact_vel_lb"].flatten()
     contact_vel_ub = contact_cond["contact_vel_ub"].flatten()
+    # print("------------")
+    # print(pos)
+    # print(vel)
 
 
     if pos[2] < contact_pos_lb[2]:

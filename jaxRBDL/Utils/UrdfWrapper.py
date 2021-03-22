@@ -1,7 +1,7 @@
 import numpy as np
 import json
 from jaxRBDL.Utils.UrdfReader import URDF
-from jaxRBDL.Utils.urdf_utils import transform_origin,rpy_to_matrix
+from jaxRBDL.Utils.UrdfUtils import transform_origin,rpy_to_matrix
 from jaxRBDL.Math.SpatialTransform import SpatialTransform
 from jaxRBDL.Model.RigidBodyInertia import RigidBodyInertia
 import jax.numpy as jnp
@@ -73,6 +73,9 @@ class UrdfWrapper(object):
         model["parent"] = self.parent
         model["jname"] = self.jname
         model["urdf_path"] = self.urdf_path
+        model["NC"] = self.NC
+        model["idcontact"] = self.idcontact
+        model["contactpoint"] = self.contactpoint
         return model
 
     @property
@@ -102,6 +105,21 @@ class UrdfWrapper(object):
     def urdf_path(self):
         urdf_path = self._model['urdf_path']
         return urdf_path
+    
+    @property
+    def NC(self):
+        nc = self._model['NC']
+        return nc
+
+    @property
+    def idcontact(self):
+        idcontact = self._model['idcontact']
+        return idcontact
+
+    @property
+    def contactpoint(self):
+        contactpoint = self._model['contactpoint']
+        return contactpoint
 
     def save(self, file_path: str):
         with open(file_path, 'w') as outfile:
@@ -122,6 +140,29 @@ def load_urdf(file_path):
     NB = len(robot.links)
     model["NB"] = NB
 
+    #NC
+    NC = 0
+    _contact_id = [] 
+    _contact_points = []
+    # for i in range(NB):
+    #    _numcols = len(robot.links[i].collisions)
+    #    if(_numcols>0):
+    #        NC+=1
+    #        _contact_id.append(i+1) #bodyid plus 1
+    #        _contact_points.append(np.zeros((3,)))#assume not contact at all [0.0,-0.30,0.0]
+    for i in range(NB):
+       _numcols = len(robot.links[i].collisions)
+       _name = robot.links[i].name
+       if(_numcols>0):
+           if(_name.endswith('lower_leg')):
+               NC+=1
+               _contact_id.append(i+1) #bodyid plus 1
+               _contact_points.append(np.array([0.0,-0.280,0.0]))#assume not contact at all [0.0,-0.30,0.0]
+    model['NC'] = NC
+    model['idcontact'] = _contact_id.copy()
+    model['contactpoint'] = _contact_points.copy()
+
+
     #joint_name
     joint_name = []
     joint_name.append("") #the first joint does't not exist
@@ -135,7 +176,7 @@ def load_urdf(file_path):
 
     #grav
     a_grav = np.zeros((6,1))
-    # a_grav[5] = -9.81
+    a_grav[5] = -9.81
     model["a_grav"] = a_grav
 
     #jtype
@@ -155,7 +196,7 @@ def load_urdf(file_path):
 
     #joint_axis 
     joint_axis = ""
-    joint_axis += 'x' #TODO:need discuss
+    joint_axis += 'z' #TODO:need discuss x,y for fixed base, z for moving base
     for i in range(NB-1):
         axis_type = robot.joints[i].axis
         if(axis_type[0] == 1):

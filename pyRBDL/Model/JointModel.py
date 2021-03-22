@@ -34,17 +34,6 @@ def JointModel(jtype: int, jaxis: str, q: float)->Tuple[np.ndarray, np.ndarray]:
         if jaxis == 'z':
             Xj = Xrotz(q)
             S = np.array([0, 0, 1, 0, 0, 0]).reshape(6, 1)
-
-        #add by qinjie
-        if jaxis == 'a':
-            Xj = Xrotx(-q)
-            S = np.array([1, 0, 0, 0, 0, 0]).reshape(6, 1)
-        if jaxis == 'b':
-            Xj = Xroty(-q)
-            S = np.array([0, 1, 0, 0, 0, 0]).reshape(6, 1)
-        if jaxis == 'c':
-            Xj = Xrotz(-q)
-            S = np.array([0, 0, 1, 0, 0, 0]).reshape(6, 1)
     if jtype == 1:
         # prismatic joint
         if jaxis == 'x':

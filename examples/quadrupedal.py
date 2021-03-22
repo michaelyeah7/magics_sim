@@ -214,10 +214,34 @@ def test_gradient():
     print('grads',grads)
 
 
+
+def contact_example():
+    model = UrdfWrapper("urdf/laikago/laikagolow.urdf").model
+    osim = ObdlSim(model,dt=2e-3,vis=True)
+    NL = len(model['parent'])
+    print("contact Id:",model["idcontact"])
+    #roate
+    q = np.array([0.0]*NL)
+    q[1] = 1.57
+    osim.step_theta(q)
+    time.sleep(2.0)
+    #apply force
+    q = np.array([0.0]*NL)
+    q[2]=10.0
+    #osim.step_toruqe(q)
+    #contact
+    i = 0
+    while(True):    
+        print("loop",i)
+        i+=1
+        osim.step_contact(q)
+        # time.sleep(0.1)
+
 if __name__ == "__main__":
     # arm_test()
-    laikago_dynamics_test()
+    # laikago_dynamics_test()
     # laikago_trajectory()
 #     target_pos()
     # test_gradient()
+    contact_example()
 

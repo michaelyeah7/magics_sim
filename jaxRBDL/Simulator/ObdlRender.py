@@ -1,7 +1,7 @@
 import pybullet as p
 import pybullet_data
 import numpy as np
-from jaxRBDL.Utils.urdf_utils import matrix_to_rpy
+from jaxRBDL.Utils.UrdfUtils import matrix_to_rpy
 from pyRBDL.Kinematics.CalcBodyToBaseCoordinates import CalcBodyToBaseCoordinates
 from pyRBDL.Kinematics.TransformToPosition import TransformToPosition
 import time
@@ -51,6 +51,9 @@ class RenderObject():
         self.link_name = name
     
     def assign_initQua(self,qua,rpy):
+        """
+        this qua is from urdf link rpy
+        """
         self.init_qua = qua
         self.init_rpy = rpy
 
@@ -61,10 +64,14 @@ class ObdlRender():
         self.model=model
         self.p = p 
 
-        #paunch pybullet
+        #launch pybullet
         p.connect(p.GUI)
         p.setAdditionalSearchPath(pybullet_data.getDataPath()) 
-        p.loadURDF("plane.urdf")
+        self.plane_id = p.loadURDF("plane.urdf")
+        self.p.setTimeStep(1e-9) # for collision detect
+
+        #get mapping from model
+        self.id_mapping = dict()
 
         #render
         self.get_objects(self.robot)
@@ -105,6 +112,8 @@ class ObdlRender():
 
         #get shape and local position
         _lid = 0
+        _model_lid = 1
+        _renderID = 0
         current_q = [0.0]*self.model["NB"]
         # self.rpy = np.zeros((3,))
         self.rpys = np.zeros((NL,3))
@@ -151,7 +160,10 @@ class ObdlRender():
                 _obj.assign_id(bId)
                 _obj.assign_name(l.name)
                 self.render_objects.append(_obj)
+                self.id_mapping[_model_lid] = _renderID
+                _renderID+=1
             _lid+=1
+            _model_lid +=1
 
     
     def create_visualshape(self,target_obj):
@@ -179,7 +191,7 @@ class ObdlRender():
         render robot to the target joint angle
         """
         self.rpys = np.zeros((3,))
-        self.transform_rpy(self.model,targetQ)
+        # self.transform_rpy(self.model,targetQ)
         self.transform_qua(self.model,targetQ)
         n_obj = len(self.render_objects)
         for i in range(n_obj):
@@ -306,20 +318,9 @@ class ObdlRender():
         input = (model, q, _jid, local_pos)
         pos = CalcBodyToBaseCoordinates(*input)
         
-        # _rid = self.model['parent'][_jid-1] #TODO important change
-        # if(model['jtype'][_rid] == 0):
-        #     if(model['jaxis'][_rid]=='x'):
-        #         self.rpy[0] += q[_rid]
-        #     elif(model['jaxis'][_rid]=='y'):
-        #         self.rpy[1] += q[_rid]
-        #     elif(model['jaxis'][_rid]=='z'):
-        #         self.rpy[2] += q[_rid]
-        # rpy = np.array(self.rpy) #TODO nedd discuss
-        # qua = p.getQuaternionFromEuler(rpy)
-
         _rid = obj.parent_joint
-        rpy = np.array(self.rpys[_rid]) #+ np.array(obj.init_rpy)
-        qua = p.getQuaternionFromEuler(rpy)
+        # rpy = np.array(self.rpys[_rid]) 
+        # qua = p.getQuaternionFromEuler(rpy)
         qua = self.quas[_rid]
 
         pos = np.asarray(pos).flatten() 
@@ -359,6 +360,25 @@ class ObdlRender():
         n = len(_res)
         _res = np.reshape(np.asarray(_res),(n,3))
         return _res
+    
+    def check_collision(self,contact_ids):
+        self.p.stepSimulation() # for collision  detect
+        cflags = [0.0] * len(contact_ids)
+        cpts = [np.zeros((3,))] * len(contact_ids)
+        n_id = len(contact_ids)
+        for i in range(n_id):
+            _contact_id = contact_ids[i]
+            _render_id = 0
+            if(_contact_id in self.id_mapping.keys()):
+                _render_id = self.id_mapping[_contact_id]
+            else:
+                continue
+            _lid = self.render_objects[_render_id].link_id
+            _info = self.p.getContactPoints(self.plane_id,_lid)
+            if(len(_info)>0):
+                cflags[i] = 2.0 #1.0
+                cpts[i] = np.array(_info[0][6])#np.array([0.0,-0.30,0.0])#np.array(_info[0][6])TODO:important: local pos of leg endpoint in the last joint
+        return cflags,cpts
 
 if __name__ == "__main__":
 

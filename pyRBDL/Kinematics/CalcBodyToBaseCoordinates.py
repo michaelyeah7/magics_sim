@@ -3,7 +3,6 @@ import numpy as np
 from pyRBDL.Model.JointModel import JointModel
 from pyRBDL.Math.Xtrans import Xtrans
 from pyRBDL.Kinematics.TransformToPosition import TransformToPosition
-import pdb
 
 def CalcBodyToBaseCoordinates(model: dict, q: np.ndarray, body_id: int, point_pos: np.ndarray)->np.ndarray:
     q = q.flatten()
@@ -23,7 +22,7 @@ def CalcBodyToBaseCoordinates(model: dict, q: np.ndarray, body_id: int, point_po
         if parent[i] == 0:
             X0.append(Xup)
         else:
-            X0.append(np.matmul(Xup, X0[parent[i] -1])) # this is parent[i]-1
+            X0.append(np.matmul(Xup, X0[parent[i] - 1]))
     
     XT_point = Xtrans(point_pos)
     X0_point =  np.matmul(XT_point, X0[body_id - 1])
