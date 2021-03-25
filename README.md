@@ -23,7 +23,8 @@ python examples/cartpole_NN_rbdl.py
 
 
 ## Description
-This simulator contains several simple robotic envs written in [JAX](https://github.com/google/jax) and with a Neural Network controller implemented. A render and urdf parser also included to extend to more realistic robotic application.
+<!-- This simulator contains several simple robotic envs written in [JAX](https://github.com/google/jax) and with a Neural Network controller implemented. A render and urdf parser also included to extend to more realistic robotic application. -->
+This is a magics simulator with a NN controller. A render and urdf parser also included to extend to more realistic robotic application.
 
 ## Envs
 ### Cart Pole
@@ -32,7 +33,7 @@ This simulator contains several simple robotic envs written in [JAX](https://git
 
 Control the cartpole using manually calculated forward dynamics. Training converges at very fast speed(first two episodes). The cartpole can keep upright for 200 timesteps.
 
-For this demo, dynamics is implemented by jaxRBDL. Training time takes 2 hours for 100 episodes on MAC. Can't tell any convergence from loss graph. The cartpole can keep upright for 57 timesteps.
+Training time takes 2 hours for 100 episodes on MAC. Can't tell any convergence from loss graph. The cartpole can keep upright for 57 timesteps.
 ```
 python examples/cartpole_NN_rbdl.py
 ```
