@@ -1,8 +1,9 @@
 import numpy as np
 from jaxRBDL.Kinematics.CalcBodyToBaseCoordinates import CalcBodyToBaseCoordinates
 from jaxRBDL.Kinematics.CalcPointVelocity import CalcPointVelocity
+import jax.numpy as jnp
 
-def DeterminContactType(pos: np.ndarray, vel: np.ndarray, contact_cond: dict)->int:
+def DeterminContactType(pos: jnp.ndarray, vel: jnp.ndarray, contact_cond: dict)->int:
     pos = pos.flatten()
     vel = vel.flatten()
     contact_pos_lb = contact_cond["contact_pos_lb"].flatten()
@@ -30,17 +31,17 @@ def DeterminContactType(pos: np.ndarray, vel: np.ndarray, contact_cond: dict)->i
 
     return contact_type
 
-def  DetectContact(model: dict, q: np.ndarray, qdot: np.ndarray, contact_cond: dict)->np.ndarray:
+def  DetectContact(model: dict, q: jnp.ndarray, qdot: jnp.ndarray, contact_cond: dict)->jnp.ndarray:
     NC = int(model["NC"])
 
     try: 
-        idcontact = np.squeeze(model["idcontact"], axis=0).astype(int)
-        contactpoint = np.squeeze(model["contactpoint"], axis=0)
+        idcontact = jnp.squeeze(model["idcontact"], axis=0).astype(int)
+        contactpoint = jnp.squeeze(model["contactpoint"], axis=0)
     except:
         idcontact = model["idcontact"]
         contactpoint = model["contactpoint"]
 
-    flag_contact = np.zeros((NC, 1))
+    flag_contact = jnp.zeros((NC, 1))
 
 
     flag_contact_list = []
@@ -53,7 +54,7 @@ def  DetectContact(model: dict, q: np.ndarray, qdot: np.ndarray, contact_cond: d
         # Detect contact
         flag_contact_list.append(DeterminContactType(endpos_item, endvel_item, contact_cond))
 
-    flag_contact = np.asfarray(flag_contact_list).reshape((-1, 1))
+    flag_contact = jnp.asarray(flag_contact_list).reshape((-1, 1))
 
     return flag_contact
     

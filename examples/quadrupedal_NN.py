@@ -83,8 +83,8 @@ agent = Deep_Qaudrupedal(
 # update_params = True
 # render = False
 
-load_params = True
-update_params = False
+load_params = False
+update_params = True
 render = True
 
 if load_params == True:
@@ -107,6 +107,7 @@ for j in range(episodes_num):
     if (update_params==True):
         # grads = f_grad(prev_state, agent.params, env, agent)
         grads = f_grad(env, agent, agent.params)
+        print("grads",grads)
         #get norm square
         total_norm_sqr = 0                
         for (dw,db) in grads:

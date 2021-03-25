@@ -154,8 +154,9 @@ class ObdlSim():
         
         #forward dynamics
         T = self.dt
-        input = (_model,_X, tau,T,contact_cond)
-        xk, contact_force = StateFunODE(*input)
+        input = (_model,_X, tau,T,contact_cond)       
+        xk, contacts_force = StateFunODE(*input)
+
 
         #calc state
         NB = int(_model["NB"])

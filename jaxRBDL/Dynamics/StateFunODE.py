@@ -139,6 +139,7 @@ def StateFunODE(model: dict, xk: np.ndarray, uk: np.ndarray, T: float, contact_c
     status = -1
 
     contact_force = dict()
+    print("contact force",contact_force)
 
     while status != 0:
         # ODE calculate 
