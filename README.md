@@ -1,4 +1,4 @@
-# Magics Differentiable Simulator
+# Magics Simulator
 
 <!-- ## Issue
 #### Issue description
