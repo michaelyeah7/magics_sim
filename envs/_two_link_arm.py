@@ -25,10 +25,10 @@ from envs.core import Env
 from utils import Random
 from jaxRBDL.Dynamics.ForwardDynamics import ForwardDynamics, ForwardDynamicsCore
 # from pyRBDL.Dynamics.ForwardDynamics import ForwardDynamics
-from jaxRBDL.Utils.UrdfWrapper import UrdfWrapper
+from Simulator.UrdfWrapper import UrdfWrapper
 # from jaxRBDL.Utils.UrdfWrapper_guo import UrdfWrapper
-from jaxRBDL.Simulator.ObdlRender import ObdlRender
-from jaxRBDL.Simulator.ObdlSim import ObdlSim
+from Simulator.ObdlRender import ObdlRender
+from Simulator.ObdlSim import ObdlSim
 import os
 import pybullet as p
 from numpy import sin, cos

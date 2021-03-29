@@ -1,6 +1,6 @@
-from jaxRBDL.Utils.UrdfWrapper import UrdfWrapper
-from jaxRBDL.Simulator.ObdlRender import ObdlRender
-from jaxRBDL.Simulator.ObdlSim import ObdlSim
+from SimulatorUrdfWrapper import UrdfWrapper
+from Simulator.ObdlRender import ObdlRender
+from Simulator.ObdlSim import ObdlSim
 from jaxRBDL.Dynamics.ForwardDynamics import ForwardDynamics, ForwardDynamicsCore
 from envs.core import Env
 import gym

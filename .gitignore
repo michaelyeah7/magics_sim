@@ -1,3 +1,7 @@
+#RBDL libraries
+jaxRBDL/
+pyRBDL/
+
 .txt
 # Editors
 .vscode/
