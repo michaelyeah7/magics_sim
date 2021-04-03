@@ -40,7 +40,7 @@ def loop(context, x):
         # print("grads",grads)
         agent.params = [(w - agent.lr * dw, b - agent.lr * db)
                 for (w, b), (dw, db) in zip(agent.params, grads)]
-    # print("agent.params",agent.params)
+    print("agent.params",agent.params)
 
     # agent.W -= agent.lr * d_reward_d_w
     # print("agent.W",agent.W)

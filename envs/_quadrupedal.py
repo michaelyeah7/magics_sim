@@ -1,4 +1,4 @@
-from SimulatorUrdfWrapper import UrdfWrapper
+from Simulator.UrdfWrapper import UrdfWrapper
 from Simulator.ObdlRender import ObdlRender
 from Simulator.ObdlSim import ObdlSim
 from jaxRBDL.Dynamics.ForwardDynamics import ForwardDynamics, ForwardDynamicsCore

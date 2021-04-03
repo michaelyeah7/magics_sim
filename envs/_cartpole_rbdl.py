@@ -57,7 +57,7 @@ class Cartpole_rbdl(Env):
         self.osim = ObdlSim(self.model,dt=self.tau,vis=True)
         
         #three dynamic options "RBDL" "Original" "PDP"
-        self.dynamics_option = "RBDL"
+        self.dynamics_option = "Original"
         # self.model["NB"] = self.model["NB"] + 1 
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation
@@ -110,7 +110,7 @@ class Cartpole_rbdl(Env):
             #works for PDP and Original
             force = action[0] * 10
             #works for RBDL
-            force = action[0] * 100
+            # force = action[0] * 100
             # print("fr",action)
             # print("force",force)
             if (self.dynamics_option == "Original"):
@@ -199,13 +199,14 @@ class Cartpole_rbdl(Env):
         # print("x",x)
         # print("type",type(x))
 
-        done = jax.lax.cond(
-            (jnp.abs(x) > jnp.abs(self.x_threshold))
-            + (jnp.abs(theta) > jnp.abs(self.theta_threshold_radians)),
-            lambda done: True,
-            lambda done: False,
-            None,
-        )
+        # done = jax.lax.cond(
+        #     (jnp.abs(x) > jnp.abs(self.x_threshold))
+        #     + (jnp.abs(theta) > jnp.abs(self.theta_threshold_radians)),
+        #     lambda done: True,
+        #     lambda done: False,
+        #     None,
+        # )
+        done = False
 
         # reward = 1 - done
         reward = self.reward_func(self.state)
@@ -285,3 +286,83 @@ class Cartpole_rbdl(Env):
         # x, x_dot, theta, theta_dot = state
         q = [0,0,self.state[0],self.state[2]]
         self.osim.step_theta(q)
+
+class Cartpole_Hybrid():
+    def __init__(self, model_lr = 1e-2, seed=0):
+        #init one layer parameters
+        import numpy.random as npr
+        rng=npr.RandomState(0)
+        self.model_lr = model_lr
+        #TODO add sigma
+        self.model_params = [rng.randn(4, 4),rng.randn(4)]
+        self.model = UrdfWrapper("urdf/cartpole_add_base.urdf").model 
+        self.tau = 0.02
+        self.theta_threshold_radians = 12 * 2 * math.pi / 360
+        self.x_threshold = 2.4
+        self.random = Random(seed)
+
+    def reset(self):
+        # self.random = Random(seed)
+        self.state = jax.random.uniform(
+            self.random.get_key(), shape=(4,), minval=-0.05, maxval=0.05
+        )
+        return self.state
+
+    def forward(self, state, action, model_params):
+        x, x_dot, theta, theta_dot = state
+        force = action[0] * 10
+        #works for RBDL
+        # force = action[0] * 100
+        
+        q = jnp.array([0,0,x,theta])
+        qdot = jnp.array([0,0,x_dot,theta_dot])
+        torque = jnp.array([0,0,force,0.])
+
+        input = (self.model, q, qdot, torque)
+        accelerations = ForwardDynamics(*input)
+        # print("accelerations",accelerations)
+        xacc = accelerations[2][0]
+        thetaacc = accelerations[3][0]
+
+        #Integration
+        x = x + self.tau * x_dot
+        x_dot = x_dot + self.tau * xacc
+        theta = theta + self.tau * theta_dot
+        theta_dot = theta_dot + self.tau * thetaacc
+
+        next_state = jnp.array([x, x_dot, theta, theta_dot])
+
+        w, b = model_params
+        outputs = jnp.dot(next_state, w) + b
+        dist = jax.nn.elu(outputs)
+
+        return dist
+
+    def step(self, state, action):
+        # print("start step")
+        # print("action is",action)
+        self.state = self.forward(state, action,self.model_params)
+        x, x_dot, theta, theta_dot = self.state
+        # print("x",x)
+        # print("type",type(x))
+
+        done = jax.lax.cond(
+            (jnp.abs(x) > jnp.abs(self.x_threshold))
+            + (jnp.abs(theta) > jnp.abs(self.theta_threshold_radians)),
+            lambda done: True,
+            lambda done: False,
+            None,
+        )
+
+        # reward = 1 - done
+        reward = self.reward_func(self.state)
+
+        return self.state, reward, done, {}
+
+
+    def reward_func(self,state):
+        # x, x_dot, theta, theta_dot = state
+        # reward = state[0]**2 + (state[1])**2 + 100*state[2]**2 + state[3]**2 
+        # reward = jnp.exp(state[0])-1 + state[2]**2 + state[3]**2 
+        reward = jnp.exp(state[0]**2) + (100*state[2])**2 + state[3]**2 
+        return reward

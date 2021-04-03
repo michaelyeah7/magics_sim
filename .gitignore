@@ -1,3 +1,5 @@
+#trained models
+*.txt
 #RBDL libraries
 jaxRBDL/
 pyRBDL/
