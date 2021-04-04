@@ -544,9 +544,9 @@ if __name__ == "__main__":
     # # output = dfx(f,0.1)
     # print("casadi jacobian",dynF)
 
-    # casadi_jacobian()
-    # jax_jacobian()
-    run()
+    casadi_jacobian()
+    jax_jacobian()
+    # run()
 
 
 
