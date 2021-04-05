@@ -149,23 +149,31 @@ class CartPole():
         X_goal = [0.0, math.pi, 0.0, 0.0]
 
         def _path_cost(X,U):
-            X_goal = [0.0, math.pi, 0.0, 0.0]
-            wx, wq, wdx, wdq, wu = 0.1, 0.6, 0.1, 0.1, 0.3
+            # X_goal = [0.0, math.pi, 0.0, 0.0]
+            # wx, wq, wdx, wdq, wu = 0.1, 0.6, 0.1, 0.1, 0.3
+            # wx, wq, wdx = 0.1, 0.6, 0.1
             x, q, dx, dq = X
-            path_cost = wx * (x - X_goal[0]) ** 2 + wq * (q - X_goal[1]) ** 2 + wdx * (
-                dx - X_goal[2]) ** 2 + wdq * (
+            path_cost = self.wx * (x - X_goal[0]) ** 2 + self.wq * (q - X_goal[1]) ** 2 + self.wdx * (
+                dx - X_goal[2]) ** 2 + self.wdq * (
                                  dq - X_goal[3]) ** 2 + wu * (U * U)   
             return path_cost
-        # self.path_cost = _path_cost         
+        self.path_cost = _path_cost         
 
-        self.path_cost = self.wx * (self.x - X_goal[0]) ** 2 + self.wq * (self.q - X_goal[1]) ** 2 + self.wdx * (
-                self.dx - X_goal[2]) ** 2 + self.wdq * (
-                                 self.dq - X_goal[3]) ** 2 + wu * (self.U * self.U)
+        # self.path_cost = self.wx * (self.x - X_goal[0]) ** 2 + self.wq * (self.q - X_goal[1]) ** 2 + self.wdx * (
+        #         self.dx - X_goal[2]) ** 2 + self.wdq * (
+        #                          self.dq - X_goal[3]) ** 2 + wu * (self.U * self.U)
 
+        def _final_cost(X):
+            x, q, dx, dq = X
+            final_cost = self.wx * (x - X_goal[0]) ** 2 + self.wq * (q - X_goal[1]) ** 2 + self.wdx * (
+                dx - X_goal[2]) ** 2 + self.wdq * (
+                                  dq - X_goal[3]) ** 2  # final cost 
+            return final_cost
+        self.final_cost = _final_cost
 
-        self.final_cost = self.wx * (self.x - X_goal[0]) ** 2 + self.wq * (self.q - X_goal[1]) ** 2 + self.wdx * (
-                self.dx - X_goal[2]) ** 2 + self.wdq * (
-                                  self.dq - X_goal[3]) ** 2  # final cost    
+        # self.final_cost = self.wx * (self.x - X_goal[0]) ** 2 + self.wq * (self.q - X_goal[1]) ** 2 + self.wdx * (
+        #         self.dx - X_goal[2]) ** 2 + self.wdq * (
+        #                           self.dq - X_goal[3]) ** 2  # final cost    
 
 '''
 # =============================================================================================================
@@ -236,24 +244,26 @@ class ControlPlanning:
         self.dfu_fn = jax.jit(jax.jacfwd(self.dyn,argnums=1))
 
     def setPathCost(self, path_cost):
-        print("path_cost",path_cost)
+        # print("path_cost",path_cost)
         self.path_cost = path_cost
-        self.path_cost_fn = casadi.Function('pathCost', [self.state, self.control], [self.path_cost])
-        # self.path_cost_fn = path_cost
+        # self.path_cost_fn = casadi.Function('pathCost', [self.state, self.control], [self.path_cost])
+        self.path_cost_fn = path_cost
         # Differentiate the objective (cost) functions: the notations used here are the consistent with the notations
         # defined in the PDP paper
         # This is in fact belonging to diffPMP, but we just add it here
-        self.dcx_fn = casadi.Function('dcx', [self.state, self.control], [jacobian(self.path_cost, self.state)])
-        self.dcu_fn = casadi.Function('dcx', [self.state, self.control], [jacobian(self.path_cost, self.control)])
-        # self.dcx_fn = jax.jit(jax.jacfwd(self.path_cost))
-        # self.dcu_fn = jax.jit(jax.jacfwd(self.path_cost))
+        # self.dcx_fn = casadi.Function('dcx', [self.state, self.control], [jacobian(self.path_cost, self.state)])
+        # self.dcu_fn = casadi.Function('dcx', [self.state, self.control], [jacobian(self.path_cost, self.control)])
+        self.dcx_fn = jax.jit(jax.jacfwd(self.path_cost,argnums=0))
+        self.dcu_fn = jax.jit(jax.jacfwd(self.path_cost,argnums=1))
 
     def setFinalCost(self, final_cost):
         self.final_cost = final_cost
-        self.final_cost_fn = casadi.Function('finalCost', [self.state], [self.final_cost])
+        # self.final_cost_fn = casadi.Function('finalCost', [self.state], [self.final_cost])
+        self.final_cost_fn = final_cost
 
         # Differentiate the final cost function
-        self.dhx_fn = casadi.Function('dhx', [self.state], [jacobian(self.final_cost, self.state)])
+        # self.dhx_fn = casadi.Function('dhx', [self.state], [jacobian(self.final_cost, self.state)])
+        self.dhx_fn = jax.jit(jax.jacfwd(self.final_cost,argnums=0))
 
     def setPolyControl(self, pivots):
         # Use the Lagrange polynomial to represent the control (input) function: u_t=u(t,auxvar).
@@ -287,36 +297,98 @@ class ControlPlanning:
         # Use neural network to represent the policy function: u_t=u(t,x,auxvar).
         # Note that here we use auxvar to denote the parameter of the neural policy
         layers=hidden_layers+[self.n_control]
+        print("layers",layers)
 
         # time variable
         self.t = SX.sym('t')
 
-        # construct the neural policy with the argument inputs to specify the hidden layers of the neural policy
-        a=self.state
-        auxvar=[]
-        Ak = SX.sym('Ak', layers[0], self.n_state)  # weights matrix
-        bk = SX.sym('bk', layers[0])  # bias vector
+        # # construct the neural policy with the argument inputs to specify the hidden layers of the neural policy
+        # a=self.state
+        # auxvar=[]
+        # Ak = SX.sym('Ak', layers[0], self.n_state)  # weights matrix
+        # bk = SX.sym('bk', layers[0])  # bias vector
+        # auxvar += [Ak.reshape((-1, 1))]       
+        # auxvar += [bk]
+        # print("auxvar",auxvar)
+        # a=mtimes(Ak, a) + bk
+        # for i in range(len(layers)-1):
+        #     a=tanh(a)
+        #     Ak = SX.sym('Ak', layers[i+1],layers[i] )  # weights matrix
+        #     bk = SX.sym('bk', layers[i+1])  # bias vector
+        #     auxvar += [Ak.reshape((-1, 1))]
+        #     auxvar += [bk]
+        #     a = mtimes(Ak, a) + bk
+        # self.auxvar=vcat(auxvar)
+        # self.n_auxvar = self.auxvar.numel()
+        # neural_policy=a
+        # self.policy_fn = casadi.Function('policy_fn', [self.t, self.state, self.auxvar], [neural_policy])
+        # auxvar=[]
+        # Ak = SX.sym('Ak', layers[0], self.n_state)  # weights matrix
+        # bk = SX.sym('bk', layers[0])  # bias vector
+        # auxvar += [Ak.reshape((-1, 1))]       
+        # auxvar += [bk]
+        # self.auxvar=vcat(auxvar)
+        # print("self.auxvar",self.auxvar)
+        # self.n_auxvar = self.auxvar.numel()
+
+        import numpy.random as npr
+        rng=npr.RandomState(0)
+        #construct NN/auxvar        
+        auxvar = []
+        Ak = rng.randn(layers[0], self.n_state)
         auxvar += [Ak.reshape((-1, 1))]
-        auxvar += [bk]
-        a=mtimes(Ak, a) + bk
+        bk = rng.randn(layers[0])
+        auxvar += [bk.reshape((-1, 1))]
+        # print("test_auxvar",test_auxvar)
         for i in range(len(layers)-1):
-            a=tanh(a)
-            Ak = SX.sym('Ak', layers[i+1],layers[i] )  # weights matrix
-            bk = SX.sym('bk', layers[i+1])  # bias vector
+            Ak = rng.randn(layers[i+1], layers[i])  # weights matrix
+            bk = rng.randn(layers[i+1])  # bias vector
             auxvar += [Ak.reshape((-1, 1))]
-            auxvar += [bk]
-            a = mtimes(Ak, a) + bk
-        self.auxvar=vcat(auxvar)
-        self.n_auxvar = self.auxvar.numel()
-        neural_policy=a
-        self.policy_fn = casadi.Function('policy_fn', [self.t, self.state, self.auxvar], [neural_policy])
+            auxvar += [bk.reshape((-1, 1))]
+        
+        auxvar = jnp.vstack(auxvar).flatten()
+        scale = 0.01
+        self.auxvar = scale * auxvar
+        # print("auxvar",auxvar.shape)
+        self.n_auxvar = auxvar.shape[0]
+        # print("auxvar",self.n_auxvar)
+
+        #TODO auxvar is one dimension vector
+        def _neural_policy(t, state, auxvar):
+            a = state
+            # print("state",state.shape)
+            start = 0
+            end = layers[0] * self.n_state
+            Ak = auxvar[start:end].reshape(layers[0], self.n_state)
+            start = end
+            end = end + layers[0]
+            bk = auxvar[start:end]
+            # print("Ak",Ak)
+            # print("bk",bk)
+            a = jnp.dot(Ak, a) + bk
+            for i in range(len(layers)-1):
+                start = end
+                end = start + layers[i+1] * layers[i]
+                Ak = auxvar[start:end].reshape(layers[i+1], layers[i])
+                start = end
+                end = end + layers[i]
+                bk = auxvar[start:end]
+                a = jnp.dot(Ak, a) + bk
+
+            # print("a",a)
+            return a
+
+        # test_a = _neural_policy(1, jnp.array([1,1,1,1]), test_auxvar)
+        # print("test_a",test_a)
+        self.policy_fn = _neural_policy
 
         # Differentiate control policy function
-        dpolicy_dx = casadi.jacobian(neural_policy, self.state)
-        self.dpolicy_dx_fn = casadi.Function('dpolicy_dx', [self.t, self.state, self.auxvar], [dpolicy_dx])
-        dpolicy_de = casadi.jacobian(neural_policy, self.auxvar)
-        self.dpolicy_de_fn = casadi.Function('dpolicy_de', [self.t, self.state, self.auxvar], [dpolicy_de])
-
+        # dpolicy_dx = casadi.jacobian(neural_policy, self.state)
+        # self.dpolicy_dx_fn = casadi.Function('dpolicy_dx', [self.t, self.state, self.auxvar], [dpolicy_dx])
+        # dpolicy_de = casadi.jacobian(neural_policy, self.auxvar)
+        # self.dpolicy_de_fn = casadi.Function('dpolicy_de', [self.t, self.state, self.auxvar], [dpolicy_de])
+        self.dpolicy_dx_fn = jax.jit(jax.jacfwd(self.policy_fn,argnums=1))
+        self.dpolicy_de_fn = jax.jit(jax.jacfwd(self.policy_fn,argnums=2))
     # The following are to solve PDP control and planning with polynomial control policy
 
     def integrateSys(self, ini_state, horizon, auxvar_value):
@@ -336,15 +408,17 @@ class ControlPlanning:
         cost = 0
         for t in range(horizon):
             curr_x = state_traj[t, :]
-            curr_u = self.policy_fn(t, curr_x, auxvar_value).full().flatten()
+            # curr_u = self.policy_fn(t, curr_x, auxvar_value).full().flatten()
+            curr_u = self.policy_fn(t, curr_x, auxvar_value).flatten()
             # state_traj[t + 1, :] = self.dyn_fn(curr_x, curr_u).full().flatten()
             # state_traj[t + 1, :] = self.dyn_fn(curr_x, curr_u).flatten()
             state_traj = jax.ops.index_update(state_traj,jax.ops.index[t+1, :],self.dyn_fn(curr_x, curr_u).flatten())
             # control_traj[t, :] = curr_u
             control_traj = jax.ops.index_update(control_traj,jax.ops.index[t, :],curr_u)
-            cost += self.path_cost_fn(curr_x, curr_u).full()
-            # cost += self.path_cost_fn(curr_x, curr_u)
-        cost += self.final_cost_fn(state_traj[-1, :]).full()
+            # cost += self.path_cost_fn(curr_x, curr_u).full()
+            cost += self.path_cost_fn(curr_x, curr_u)
+        # cost += self.final_cost_fn(state_traj[-1, :]).full().reshape(1,)
+        cost += self.final_cost_fn(state_traj[-1, :])
 
         traj_sol = {'state_traj': state_traj,
                     'control_traj': control_traj,
@@ -371,8 +445,10 @@ class ControlPlanning:
             # print("jacobian takes %s seconds ---" % (time.time() - start_time))
             # print("dynF",dynF)
             dynG += [self.dfu_fn(curr_x, curr_u)]
-            dUx += [self.dpolicy_dx_fn(t, curr_x, auxvar_value).full()]
-            dUe += [self.dpolicy_de_fn(t, curr_x, auxvar_value).full()]
+            # dUx += [self.dpolicy_dx_fn(t, curr_x, auxvar_value).full()]
+            # dUe += [self.dpolicy_de_fn(t, curr_x, auxvar_value).full()]
+            dUx += [self.dpolicy_dx_fn(t, curr_x, auxvar_value)]
+            dUe += [self.dpolicy_de_fn(t, curr_x, auxvar_value)]
 
         auxSys = {"dynF": dynF,
                   "dynG": dynG,
@@ -441,13 +517,14 @@ class ControlPlanning:
         dauxvar = jnp.zeros(self.n_auxvar)
         for t in range(horizon):
             # chain rule
-            dauxvar += (jnp.matmul(self.dcx_fn(state_traj[t, :], control_traj[t, :]).full(), dxdauxvar_traj[t]) +
-                        jnp.matmul(self.dcu_fn(state_traj[t, :], control_traj[t, :]).full(),
-                                     dudauxvar_traj[t])).flatten()
-            # dauxvar += (jnp.matmul(self.dcx_fn(state_traj[t, :], control_traj[t, :]), dxdauxvar_traj[t]) +
+            # dauxvar += (jnp.matmul(self.dcx_fn(state_traj[t, :], control_traj[t, :]).full(), dxdauxvar_traj[t]) +
             #             jnp.matmul(self.dcu_fn(state_traj[t, :], control_traj[t, :]).full(),
             #                          dudauxvar_traj[t])).flatten()
-        dauxvar += jnp.matmul(self.dhx_fn(state_traj[-1, :]).full(), dxdauxvar_traj[-1]).flatten()
+            dauxvar += (jnp.matmul(self.dcx_fn(state_traj[t, :], control_traj[t, :]), dxdauxvar_traj[t]) +
+                        jnp.matmul(self.dcu_fn(state_traj[t, :], control_traj[t, :]),
+                                     dudauxvar_traj[t])).flatten()
+        # dauxvar += jnp.matmul(self.dhx_fn(state_traj[-1, :]).full(), dxdauxvar_traj[-1]).flatten()
+        dauxvar += jnp.matmul(self.dhx_fn(state_traj[-1, :]), dxdauxvar_traj[-1]).flatten()
 
         return loss, dauxvar
 
@@ -507,7 +584,7 @@ def run():
     # dyn = cartpole.X + dt * cartpole.f
     # print("dyn",dyn)
     # oc.setDyn(dyn)
-    oc.setDyn(dynamics)
+    oc.setDyn(cartpole.dynamics)
     oc.setPathCost(cartpole.path_cost)
     oc.setFinalCost(cartpole.final_cost)
 
@@ -520,7 +597,9 @@ def run():
         oc.init_step_neural_policy(hidden_layers=[oc.n_state,oc.n_state])
         # initial_parameter = jnp.random.randn(oc.n_auxvar)
         key = jax.random.PRNGKey(0)
-        initial_parameter = jax.random.normal(key,shape=[oc.n_auxvar])
+        # initial_parameter = jax.random.normal(key,shape=[oc.n_auxvar])
+        initial_parameter = oc.auxvar
+        print("initial_parameter",initial_parameter.shape)
         current_parameter = initial_parameter
         max_iter = 5000
         start_time = time.time()
