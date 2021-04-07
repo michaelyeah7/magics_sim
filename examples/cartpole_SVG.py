@@ -28,50 +28,66 @@ def loop(context, x):
 
     return (env, agent), reward, done
 
-def roll_out(env, agent, params):
+def roll_out(env, agent, params, T):
     gamma = 0.9
     losses = 0.0
-    for i in range(100):
+    for i in range(5):
         (env, agent), r, done= loop((env, agent,params), i)
         losses = losses * gamma + r 
         if done:
             print("end this episode because out of threshhold in policy update")
             env.past_reward = 0
             break
-        
+    losses += agent.value(env.state,agent.value_params) * gamma        
     return losses
 
-f_grad = jax.grad(roll_out,argnums=2)
+f_grad = jax.value_and_grad(roll_out,argnums=2)
 
+def loss_value(state, next_state, reward, value_params):
+    td = reward + agent.value(next_state, value_params) - agent.value(state, value_params)
+    value_loss = 0.5 * (td ** 2)
+    return value_loss
+
+value_loss_grad = jax.value_and_grad(loss_value,argnums=3)
 
 def loss_hybrid_model(prev_state, control, true_next_state, model_params):
     next_state = hybrid_env.forward(prev_state, control, model_params)
     model_loss = jnp.sum((next_state - true_next_state)**2)
+    # model_loss = jnp.linalg.norm(next_state - true_next_state)
+    # print("model loss",model_loss)
+    # print("model_loss.value",model_loss[0])
+    # model_losses.append(model_loss)
     return model_loss
-model_loss_grad = jax.grad(loss_hybrid_model,argnums=3)
+# model_loss_grad = jax.grad(loss_hybrid_model,argnums=3)
+model_loss_grad = jax.value_and_grad(loss_hybrid_model,argnums=3)
 
 def loop_for_render(context, x):
-    env, agent, params = context
+    env, hybrid_env, agent, params = context
     if(render==True):
         env.osim_render()
     control = agent(env.state, params)
     prev_state = copy.deepcopy(env.state)
     next_state, reward, done, _ = env.step(env.state,control)
 
+    #update value function
+    value_loss, value_grads =  value_loss_grad(prev_state,next_state,reward,agent.value_params)
+    agent.value_losses.append(value_loss)
+    agent.value_params = agent.update(value_grads,agent.value_params,agent.lr)    
+    
     #update hybrid model
-    model_grads = model_loss_grad(prev_state,control,next_state,hybrid_env.model_params)
-    w, b = hybrid_env.model_params
-    dw, db = model_grads
-    hybrid_env.model_params = [w - hybrid_env.model_lr * dw, b - hybrid_env.model_lr * db]
+    model_loss, model_grads = model_loss_grad(prev_state,control,next_state,hybrid_env.model_params)
+    # print("model_loss",model_loss)
+    hybrid_env.model_losses.append(model_loss)
+    hybrid_env.model_params = agent.update(model_grads,hybrid_env.model_params,hybrid_env.model_lr)
 
 
-    return (env, agent), reward, done
+    return (env, hybrid_env, agent), reward, done
 
-def roll_out_for_render(env, agent, params):
+def roll_out_for_render(env, hybrid_env, agent, params, T):
     gamma = 0.9
     losses = 0.0
-    for i in range(100):
-        (env, agent), r, done= loop_for_render((env, agent,params), i)
+    for i in range(T):
+        (env, hybrid_env, agent), r, done= loop_for_render((env, hybrid_env, agent,params), i)
         losses = losses * gamma + r 
         if done:
             print("end this episode because out of threshhold in model update")
@@ -84,11 +100,11 @@ def roll_out_for_render(env, agent, params):
 
 # Deep
 env = Cartpole_rbdl() 
-hybrid_env = Cartpole_Hybrid(model_lr=1e-2)
+hybrid_env = Cartpole_Hybrid(model_lr=1e-1)
 agent = Deep_Cartpole_rbdl(
              env_state_size = 4,
              action_space = jnp.array([0]),
-             learning_rate = 0.1,
+             learning_rate = 0.5,
              gamma = 0.99,
              max_episode_length = 500,
              seed = 0
@@ -100,10 +116,10 @@ agent = Deep_Cartpole_rbdl(
 
 load_params = False
 update_params = True
-render = False
+render = True
 
 if load_params == True:
-    loaded_params = pickle.load( open( "examples/arm_rbdl_params_episode_20_2021-03-20 18:19:28.txt", "rb" ) )
+    loaded_params = pickle.load( open( "examples/cartpole_svg_params_episode_100_2021-04-05 06:10:53.txt", "rb" ) )
     agent.params = loaded_params
 
  # for loop version
@@ -112,8 +128,10 @@ print(env.reset())
 reward = 0
 loss = 0
 episode_loss = []
+# episodes_num = 1000
 episodes_num = 1000
-T = 200
+T = 100
+# T = 1000
 for j in range(episodes_num):
 
     loss = 0
@@ -121,46 +139,53 @@ for j in range(episodes_num):
     print("episode:{%d}" % j)
 
     #update hybrid model using real trajectories
-    loss = roll_out_for_render(env, agent, agent.params)
+    loss = roll_out_for_render(env, hybrid_env, agent, agent.params, T)
+    # print("hybrid_env.model_losses",hybrid_env.model_losses)
 
     #update the parameter
     if (update_params==True):
-        hybrid_env.reset() 
-        # grads = f_grad(prev_state, agent.params, env, agent)
+        #update policy using 20 horizon 5 partial trajectories
+        for i in range(20):
+            # env.reset()
+            hybrid_env.reset() 
+            # grads = f_grad(prev_state, agent.params, env, agent)
 
-        #train agent using learned hybrid env
-        grads = f_grad(hybrid_env, agent, agent.params)
-        #get norm square
-        total_norm_sqr = 0                
-        for (dw,db) in grads:
-            # print("previous dw",dw)
-            # dw = normalize(dw)
-            # db = normalize(db[:,np.newaxis],axis =0).ravel()
-            total_norm_sqr += np.linalg.norm(dw) ** 2
-            total_norm_sqr += np.linalg.norm(db) ** 2
-        # print("grads",grads)
-
-        #scale the gradient
-        gradient_clip = 0.2
-        scale = min(
-            1.0, gradient_clip / (total_norm_sqr**0.5 + 1e-4))
-
-        agent.params = [(w - agent.lr * scale * dw, b - agent.lr * scale * db)
-                for (w, b), (dw, db) in zip(agent.params, grads)]
-        
-        # agent.params = [(w - agent.lr * dw, b - agent.lr * db)
-        #         for (w, b), (dw, db) in zip(agent.params, grads)]
+            #train agent using learned hybrid env
+            total_return, grads = f_grad(hybrid_env, agent, agent.params,T)
+            # grads = f_grad(env, agent, agent.params, T)
+            agent.params = agent.update(grads, agent.params, agent.lr)
 
     episode_loss.append(loss)
     print("loss is %f" % loss)
     if (j%100==0 and j!=0 and update_params==True):
+        #for agent loss
         with open("examples/cartpole_svg_params"+ "_episode_%d_" % j + strftime("%Y-%m-%d %H:%M:%S", gmtime()) +".txt", "wb") as fp:   #Pickling
             pickle.dump(agent.params, fp)
+        plt.figure()
+        plt.plot(episode_loss[1:])
+        plt.savefig('cartpole_svg_loss'+ strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '.png')
+        plt.close()
+        #for value function loss
+        with open("examples/cartpole_svg_value_params"+ "_episode_%d_" % j + strftime("%Y-%m-%d %H:%M:%S", gmtime()) +".txt", "wb") as fp:   #Pickling
+            pickle.dump(agent.value_params, fp)
+        plt.figure()
+        plt.plot(agent.value_losses)
+        plt.savefig(('cartpole_svg_agent_value_loss_episode_%d_' % j) + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '.png')
+        plt.close()        
+        #for model loss
+        with open("examples/cartpole_svg_model_params"+ "_episode_%d_" % j + strftime("%Y-%m-%d %H:%M:%S", gmtime()) +".txt", "wb") as fp:   #Pickling
+            pickle.dump(hybrid_env.model_params, fp)
+        plt.figure()
+        plt.plot(hybrid_env.model_losses)
+        plt.savefig(('cartpole_svg_model_loss_episode_%d_' % j) + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '.png')
+        plt.close()
 # reward_forloop = reward
 # print('reward_forloop = ' + str(reward_forloop))
-plt.plot(episode_loss[1:])
+# plt.plot(episode_loss[1:])
+# plt.plot(hybrid_env.model_losses)
 
 #save plot and params
-plt.savefig('cartpole_svg_loss'+ strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '.png')
+# plt.savefig('cartpole_svg_loss'+ strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '.png')
+# plt.savefig('cartpole_svg_model_loss'+ strftime("%Y-%m-%d %H:%M:%S", gmtime()) + '.png')
 
 # fp.close()
