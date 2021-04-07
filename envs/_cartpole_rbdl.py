@@ -57,7 +57,7 @@ class Cartpole_rbdl(Env):
         self.osim = ObdlSim(self.model,dt=self.tau,vis=True)
         
         #three dynamic options "RBDL" "Original" "PDP"
-        self.dynamics_option = "Original"
+        self.dynamics_option = "PDP"
         # self.model["NB"] = self.model["NB"] + 1 
 
         # Angle limit set to 2 * theta_threshold_radians so failing observation
@@ -108,9 +108,11 @@ class Cartpole_rbdl(Env):
             #works for original
             # force = np.clip(action[0] * 100,-10,10)
             #works for PDP and Original
-            force = action[0] * 10
+            # force = action[0] * 10
             #works for RBDL
             # force = action[0] * 100
+            #works for hybrid env
+            force = action[0]
             # print("fr",action)
             # print("force",force)
             if (self.dynamics_option == "Original"):
@@ -143,12 +145,12 @@ class Cartpole_rbdl(Env):
 
                 g=9.81
 
-                ddx = (U + mp * sin(q) * (l * dq * dq + g * cos(q))) / (
-                        mc + mp * sin(q) * sin(q))  # acceleration of x
-                ddq = (-U * cos(q) - mp * l * dq * dq * sin(q) * cos(q) - (
-                        mc + mp) * g * sin(
+                ddx = (U + mp * jnp.sin(q) * (l * dq * dq + g * jnp.cos(q))) / (
+                        mc + mp * jnp.sin(q) * jnp.sin(q))  # acceleration of x
+                ddq = (-U * jnp.cos(q) - mp * l * dq * dq * jnp.sin(q) * jnp.cos(q) - (
+                        mc + mp) * g * jnp.sin(
                     q)) / (
-                                l * mc + l * mp * sin(q) * sin(q))  # acceleration of theta
+                                l * mc + l * mp * jnp.sin(q) * jnp.sin(q))  # acceleration of theta
                 xacc = ddx
                 thetaacc = ddq
 
@@ -199,14 +201,14 @@ class Cartpole_rbdl(Env):
         # print("x",x)
         # print("type",type(x))
 
-        # done = jax.lax.cond(
-        #     (jnp.abs(x) > jnp.abs(self.x_threshold))
-        #     + (jnp.abs(theta) > jnp.abs(self.theta_threshold_radians)),
-        #     lambda done: True,
-        #     lambda done: False,
-        #     None,
-        # )
-        done = False
+        done = jax.lax.cond(
+            (jnp.abs(x) > jnp.abs(self.x_threshold))
+            + (jnp.abs(theta) > jnp.abs(self.theta_threshold_radians)),
+            lambda done: True,
+            lambda done: False,
+            None,
+        )
+        # done = False
 
         # reward = 1 - done
         reward = self.reward_func(self.state)
@@ -294,8 +296,10 @@ class Cartpole_Hybrid():
         rng=npr.RandomState(0)
         self.model_lr = model_lr
         #TODO add sigma
-        self.model_params = [rng.randn(4, 4),rng.randn(4)]
+        # self.model_params = [rng.randn(4, 4),rng.randn(4)]
+        self.model_params = [(rng.randn(4, 32),rng.randn(32)),(rng.randn(32, 4),rng.randn(4))]
         self.model = UrdfWrapper("urdf/cartpole_add_base.urdf").model 
+        self.model_losses = []
         self.tau = 0.02
         self.theta_threshold_radians = 12 * 2 * math.pi / 360
         self.x_threshold = 2.4
@@ -303,8 +307,11 @@ class Cartpole_Hybrid():
 
     def reset(self):
         # self.random = Random(seed)
+        # self.state = jax.random.uniform(
+        #     self.random.get_key(), shape=(4,), minval=-0.05, maxval=0.05
+        # )
         self.state = jax.random.uniform(
-            self.random.get_key(), shape=(4,), minval=-0.05, maxval=0.05
+            self.random.get_key(), shape=(4,), minval=-0.209, maxval=0.209
         )
         return self.state
 
@@ -332,10 +339,15 @@ class Cartpole_Hybrid():
 
         next_state = jnp.array([x, x_dot, theta, theta_dot])
 
-        w, b = model_params
-        outputs = jnp.dot(next_state, w) + b
-        dist = jax.nn.elu(outputs)
-
+        # w, b = model_params
+        # outputs = jnp.dot(next_state, w) + b
+        # dist = jax.nn.elu(outputs)
+        activations = next_state
+        for w,b in model_params[:-1]:
+            outputs = jnp.dot(activations, w) + b
+            activations = jax.nn.elu(outputs)
+        final_w, final_b = model_params[-1]
+        dist = jnp.dot(activations, final_w) + final_b
         return dist
 
     def step(self, state, action):

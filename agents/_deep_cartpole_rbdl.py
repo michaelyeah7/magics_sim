@@ -64,6 +64,7 @@ class Deep_Cartpole_rbdl(Agent):
 
         self.d_a_d_w = jax.grad(self.__call__,argnums=1)
         self.reset()
+        self.value_losses = []
 
     def reset(self) -> None:
         """
@@ -80,9 +81,12 @@ class Deep_Cartpole_rbdl(Agent):
             return [(scale * rng.randn(m, n), scale * rng.randn(n))
                 for m, n, in zip(layer_sizes[:-1], layer_sizes[1:])]
 
-        layer_sizes = [4, 32, 32, len(self.action_space)]
+        actor_layer_sizes = [4, 32, 32, len(self.action_space)]
         param_scale = 0.1
-        self.params = init_random_params(param_scale, layer_sizes)
+        self.params = init_random_params(param_scale, actor_layer_sizes)
+        #critic weights
+        critic_layer_sizes = [4, 32, 32, 1]
+        self.value_params =  init_random_params(param_scale, critic_layer_sizes)
 
         self.W = jax.random.uniform(
             self.random.generate_key(),
@@ -128,6 +132,18 @@ class Deep_Cartpole_rbdl(Agent):
         # exp = jnp.exp(logits)
         # return exp / jnp.sum(exp)
         return logits
+
+    def value(self, state, params):
+        """
+        estimate the value of state
+        """
+        activations = state
+        for w, b in params[:-1]:
+            outputs = jnp.dot(activations, w) + b
+            activations = jnp.tanh(outputs)
+        final_w, final_b = params[-1]
+        logits = jnp.dot(activations, final_w) + final_b
+        return logits[0]
 
     def softmax_grad(self, softmax: jnp.ndarray) -> jnp.ndarray:
         """
@@ -185,28 +201,26 @@ class Deep_Cartpole_rbdl(Agent):
         )
         self.current_episode_length += 1
 
-    def update(self) -> None:
+    def update(self, grads, params, lr):
         """
         Description: update weights
-        
-        Args:
-            None
-
-        Returns:
-            None
         """
-        for i in range(self.current_episode_length):
-            # Loop through everything that happend in the episode and update
-            # towards the log policy gradient times **FUTURE** reward
-            self.W += self.lr * self.episode_grads[i] + jnp.sum(
-                jnp.array(
-                    [
-                        r * (self.gamma ** r)
-                        for r in self.episode_rewards[i : self.current_episode_length]
-                    ]
-                )
-            )
-            print("Weight are:",self.W)
+        #get norm square
+        total_norm_sqr = 0                
+        for (dw,db) in grads:
+            # print("previous dw",dw)
+            # dw = normalize(dw)
+            # db = normalize(db[:,np.newaxis],axis =0).ravel()
+            total_norm_sqr += np.linalg.norm(dw) ** 2
+            total_norm_sqr += np.linalg.norm(db) ** 2
+        # print("grads",grads)
 
-        # reset episode length
-        self.current_episode_length = 0
+        #scale the gradient
+        gradient_clip = 0.2
+        scale = min(
+            1.0, gradient_clip / (total_norm_sqr**0.5 + 1e-4))
+
+        params = [(w - lr * scale * dw, b - lr * scale * db)
+                for (w, b), (dw, db) in zip(params, grads)]
+
+        return params
