@@ -1,7 +1,7 @@
 import jax
 import copy
 
-class MBAC():
+class MBRL():
     def __init__(self, env, agent):
         self.env = env
         self.agent = agent

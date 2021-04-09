@@ -10,7 +10,7 @@ from time import gmtime, strftime
 from jaxRBDL.Dynamics.ForwardDynamics import ForwardDynamics, ForwardDynamicsCore
 import numpy as np
 import os
-from model_based_ActorCritic import MBAC
+from model_based_RL import MBRL
 
 
 # Init env and agent

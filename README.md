@@ -6,7 +6,7 @@ This is a magics simulator with a NN controller. A render and urdf parser also i
 
 
 ## Model-based Reinforcement Learning
-Implement an actor-critic mbrl algorithm.
+Implement a mbrl algorithm.
 
 The total reward of cartpole experiment(140 episodes).
 
