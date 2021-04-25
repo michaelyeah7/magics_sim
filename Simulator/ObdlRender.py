@@ -1,15 +1,15 @@
 import pybullet as p
 import pybullet_data
 import numpy as np
-from jaxRBDL.Utils.UrdfUtils import matrix_to_rpy
+from Simulator.UrdfUtils import matrix_to_rpy
 from pyRBDL.Kinematics.CalcBodyToBaseCoordinates import CalcBodyToBaseCoordinates
 from pyRBDL.Kinematics.TransformToPosition import TransformToPosition
 import time
 import math
 import os
 import jax.numpy as jnp
-from jaxRBDL.Utils.UrdfReader import URDF
-from jaxRBDL.Utils.UrdfWrapper import UrdfWrapper
+from Simulator.UrdfReader import URDF
+from Simulator.UrdfWrapper import UrdfWrapper
 
 
 class RenderObject():

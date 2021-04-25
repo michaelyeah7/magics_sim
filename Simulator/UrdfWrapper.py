@@ -1,7 +1,7 @@
 import numpy as np
 import json
-from jaxRBDL.Utils.UrdfReader import URDF
-from jaxRBDL.Utils.UrdfUtils import transform_origin,rpy_to_matrix
+from Simulator.UrdfReader import URDF
+from Simulator.UrdfUtils import transform_origin,rpy_to_matrix
 from jaxRBDL.Math.SpatialTransform import SpatialTransform
 from jaxRBDL.Model.RigidBodyInertia import RigidBodyInertia
 import jax.numpy as jnp
@@ -176,7 +176,7 @@ def load_urdf(file_path):
 
     #grav
     a_grav = np.zeros((6,1))
-    a_grav[5] = -9.81
+    # a_grav[5] = -9.81
     model["a_grav"] = a_grav
 
     #jtype

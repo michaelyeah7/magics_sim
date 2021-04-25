@@ -10,7 +10,7 @@ import PIL
 import trimesh
 import six
 
-from jaxRBDL.Utils.UrdfUtils import (parse_origin, unparse_origin, get_filename, load_meshes,
+from Simulator.UrdfUtils import (parse_origin, unparse_origin, get_filename, load_meshes,
                     configure_origin)
 
 

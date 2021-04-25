@@ -25,7 +25,7 @@ from utils import Random
 import numpy.random as npr
 
 # generic deep controller for 1-dimensional discrete non-negative action space
-class Deep_Cartpole_rbdl(Agent):
+class Deep_Cartpole_rbdl():
     """
     Generic deep controller that uses zero-order methods to train on an
     environment.
@@ -58,6 +58,7 @@ class Deep_Cartpole_rbdl(Agent):
         self.action_space = action_space
         self.max_episode_length = max_episode_length
         self.lr = learning_rate
+        self.value_lr = 0.01
         self.gamma = gamma
 
         self.random = Random(seed)
@@ -65,6 +66,7 @@ class Deep_Cartpole_rbdl(Agent):
         self.d_a_d_w = jax.grad(self.__call__,argnums=1)
         self.reset()
         self.value_losses = []
+        self.h_t = jnp.zeros(4)
 
     def reset(self) -> None:
         """
@@ -81,12 +83,18 @@ class Deep_Cartpole_rbdl(Agent):
             return [(scale * rng.randn(m, n), scale * rng.randn(n))
                 for m, n, in zip(layer_sizes[:-1], layer_sizes[1:])]
 
-        actor_layer_sizes = [4, 32, 32, len(self.action_space)]
+        # actor_layer_sizes = [4, 32, 32, len(self.action_space)]
+        actor_layer_sizes = [4, 512, 128, 2 * len(self.action_space)]
+        # actor_layer_sizes = [8, 512, 128, len(self.action_space)]
         param_scale = 0.1
         self.params = init_random_params(param_scale, actor_layer_sizes)
         #critic weights
-        critic_layer_sizes = [4, 32, 32, 1]
+        # critic_layer_sizes = [4, 32, 32, 1]
+        critic_layer_sizes = [4, 512, 128, 1]
         self.value_params =  init_random_params(param_scale, critic_layer_sizes)
+        #rnn weights
+        rnn_layer_sizes = [8, 32, 32, 4]
+        self.rnn_params = init_random_params(param_scale, rnn_layer_sizes)
 
         self.W = jax.random.uniform(
             self.random.generate_key(),
@@ -131,7 +139,9 @@ class Deep_Cartpole_rbdl(Agent):
         # exp = jnp.exp(z)
         # exp = jnp.exp(logits)
         # return exp / jnp.sum(exp)
-        return logits
+        mu, sigma = jnp.split(logits, 2)
+        # return logits
+        return mu, sigma
 
     def value(self, state, params):
         """
@@ -144,6 +154,18 @@ class Deep_Cartpole_rbdl(Agent):
         final_w, final_b = params[-1]
         logits = jnp.dot(activations, final_w) + final_b
         return logits[0]
+
+    def rnn(self, state, params):
+        """
+        encode previous states
+        """
+        activations = state
+        for w, b in params[:-1]:
+            outputs = jnp.dot(activations, w) + b
+            activations = jnp.tanh(outputs)
+        final_w, final_b = params[-1]
+        logits = jnp.dot(activations, final_w) + final_b
+        return logits        
 
     def softmax_grad(self, softmax: jnp.ndarray) -> jnp.ndarray:
         """
@@ -165,11 +187,20 @@ class Deep_Cartpole_rbdl(Agent):
         Returns:
             jnp.ndarray: action to take
         """
-        # print("state",state)
-        # print("W",self.W)
-        self.state = state
-        # self.probs = self.policy(state, params)  
-        self.action = self.policy(state, params)         
+        # policy_params, rnn_params = params
+        # prev_state = self.state
+        # h_t_minus =  self.h_t
+        # concatenate_h_t = jnp.hstack((prev_state, h_t_minus))
+        # h_t = self.rnn(concatenate_h_t, rnn_params)
+        # self.h_t = h_t
+        # concatenate_state = jnp.hstack((state, h_t))
+                
+        # self.action = self.policy(state, params) 
+        mu, sigma = self.policy(state, params) 
+        eps = np.random.randn(1)
+        self.action =  mu + sigma * eps
+        # self.action = self.policy(concatenate_state, policy_params)    
+        self.state = state        
         # self.action = jax.random.choice(
         #     self.random.generate_key(), 
         #     a=self.action_space, 
@@ -216,11 +247,12 @@ class Deep_Cartpole_rbdl(Agent):
         # print("grads",grads)
 
         #scale the gradient
+        # print("gradient total_norm_sqr",total_norm_sqr)
         gradient_clip = 0.2
         scale = min(
             1.0, gradient_clip / (total_norm_sqr**0.5 + 1e-4))
 
-        params = [(w - lr * scale * dw, b - lr * scale * db)
+        params = [(w - lr * dw, b - lr * db)
                 for (w, b), (dw, db) in zip(params, grads)]
 
         return params

@@ -121,7 +121,8 @@ class CartPole(Env):
 
             # force = jax.lax.cond(action == 1, lambda x: x, lambda x: -x, self.force_mag)
             # force = (action - 0.5) * 2 * 10
-            force = np.clip(action * 100,-10,10)
+            # force = np.clip(action * 100,-10,10)
+            force = action * 10
             # force = action * 200
             # print("force",force)
 
@@ -150,9 +151,10 @@ class CartPole(Env):
         self.dynamics = _dynamics
 
     def reset(self):
-        self.state = jax.random.uniform(
-            self.random.get_key(), shape=(4,), minval=-0.05, maxval=0.05
-        )
+        # self.state = jax.random.uniform(
+        #     self.random.get_key(), shape=(4,), minval=-0.05, maxval=0.05
+        # )
+        self.state = jnp.array([0.,0.,0.1,0.])
         return self.state
 
     def step(self, state, action):
@@ -163,9 +165,16 @@ class CartPole(Env):
         # print("x",x)
         # print("type",type(x))
 
+        # done = jax.lax.cond(
+        #     (jnp.abs(x) > jnp.abs(self.x_threshold))
+        #     + (jnp.abs(theta) > jnp.abs(self.theta_threshold_radians)),
+        #     lambda done: True,
+        #     lambda done: False,
+        #     None,
+        # )
+
         done = jax.lax.cond(
-            (jnp.abs(x) > jnp.abs(self.x_threshold))
-            + (jnp.abs(theta) > jnp.abs(self.theta_threshold_radians)),
+            (jnp.abs(x) > jnp.abs(self.x_threshold)),
             lambda done: True,
             lambda done: False,
             None,

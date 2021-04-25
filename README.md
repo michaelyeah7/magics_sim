@@ -6,23 +6,24 @@ This is a magics simulator with a NN controller. A render and urdf parser also i
 
 
 ## Model-based Reinforcement Learning
-Implement a mbrl algorithm.
+Implement an actor-critic mbrl algorithm.
 
-The total reward of cartpole experiment(140 episodes).
-
+<!-- The total reward of cartpole experiment(140 episodes).
 ![](assets/cartpole_loss.png)
-
 The value loss of cartpole experiment. 
-
 ![](assets/cartpole_value_loss.png) 
 ```
 python examples/cartpole_main.py
-```
+``` -->
 
 
 
 ## Envs
+### Pendulum
+![](examples/models/pendulum/pendulum_svg_agent_value_loss_episode_200_.png)
+
 ### Cart Pole
+![](examples/models/cartpole/cartpole_svg_agent_value_loss_episode_1210_.png)
 
 ![](assets/cart_pole.gif)
 
@@ -34,6 +35,7 @@ python examples/cartpole_NN_rbdl.py
 ```
 
 ### 7-link Arm Robot
+![](examples/models/arm/arm_svg_agent_value_loss_episode_230_.png)
 
 A 7 link arm robot contains 6 joints. The first base_link to arm_link_0 fixed joint will be interpreted as prismatic joint (rbdl index 1) by rbdl. The remaining 5 joints are revolute joints (rbdl index 0).
 ![](assets/arm_robot.gif)

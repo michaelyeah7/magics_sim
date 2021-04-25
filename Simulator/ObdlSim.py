@@ -1,5 +1,5 @@
-from jaxRBDL.Simulator.ObdlRender import ObdlRender
-from jaxRBDL.Utils.UrdfWrapper import UrdfWrapper
+from Simulator.ObdlRender import ObdlRender
+from Simulator.UrdfWrapper import UrdfWrapper
 from pyRBDL.Dynamics.CompositeRigidBodyAlgorithm import CompositeRigidBodyAlgorithm
 from pyRBDL.Dynamics.ForwardDynamics import ForwardDynamics
 from pyRBDL.Dynamics.InverseDynamics import InverseDynamics
@@ -8,7 +8,7 @@ from pyRBDL.Contact.CalcContactJdotQdot import CalcContactJdotQdot
 import numpy as np
 import math
 
-from jaxRBDL.Simulator.SolverContact import solver_ode,dynamics_fun
+from Simulator.SolverContact import solver_ode,dynamics_fun
 
 class ObdlSim():
     def __init__(self,model,dt,vis=False):
